@@ -20,7 +20,8 @@ jobs:
     - name: Run tests with proposals enabled
       run: cargo test --features=proposals -- -q
     - name: Run `clippy check`
-      uses: actions-rs/clippy-check@v1
+      uses: giraffate/clippy-action@v1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --workspace --features=proposals --all-targets -q -- -D warnings
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        reporter: github-pr-check
+        clippy_flags: --workspace --features=proposals --all-targets -q -- -D warnings
