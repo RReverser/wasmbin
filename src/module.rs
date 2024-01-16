@@ -182,6 +182,7 @@ impl Module {
     /// });
     /// # Ok(())
     /// # }
+    #[allow(clippy::missing_panics_doc)]
     pub fn find_or_insert_std_section<T: StdPayload>(
         &mut self,
         insert_callback: impl FnOnce() -> T,
