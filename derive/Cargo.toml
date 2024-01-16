@@ -12,7 +12,7 @@ proc-macro = true
 
 [dependencies]
 synstructure = "0.12.6"
-quote = "1.0.23"
-proc-macro2 = "1.0.51"
+quote = "1.0.35"
+proc-macro2 = "1.0.76"
 syn = "1.0.109"
-thiserror = "1.0.38"
+thiserror = "1.0.56"
