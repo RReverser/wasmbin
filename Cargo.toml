@@ -1,11 +1,11 @@
 [package]
 name = "wasmbin"
 version = "0.6.0"
-authors = ["Ingvar Stepanyan <rreverser@google.com>"]
+authors = ["Ingvar Stepanyan <me@rreverser.com>"]
 edition = "2021"
 license = "Apache-2.0"
 description = "A self-generating WebAssembly parser and serializer"
-repository = "https://github.com/GoogleChromeLabs/wasmbin"
+repository = "https://github.com/RReverser/wasmbin"
 categories = ["wasm", "parser-implementations"]
 keywords = ["webassembly", "wasm", "parser", "serializer"]
 

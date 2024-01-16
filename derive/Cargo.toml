@@ -1,11 +1,11 @@
 [package]
 name = "wasmbin-derive"
 version = "0.2.2"
-authors = ["Ingvar Stepanyan <rreverser@google.com>"]
+authors = ["Ingvar Stepanyan <me@rreverser.com>"]
 edition = "2018"
 license = "Apache-2.0"
 description = "Derive crate for the wasmbin library"
-repository = "https://github.com/GoogleChromeLabs/wasmbin"
+repository = "https://github.com/RReverser/wasmbin"
 
 [lib]
 proc-macro = true
