@@ -40,9 +40,9 @@ fn struct_discriminant<'v>(v: &VariantInfo<'v>) -> syn::Result<Option<Cow<'v, sy
         .filter_map(|attr| match attr {
             syn::Attribute {
                 style: syn::AttrStyle::Outer,
-                path,
+                meta,
                 ..
-            } if path.is_ident("wasmbin") => {
+            } if meta.path().is_ident("wasmbin") => {
                 syn::custom_keyword!(discriminant);
 
                 Some(
@@ -137,7 +137,7 @@ fn parse_repr(s: &Structure) -> syn::Result<syn::Type> {
     s.ast()
         .attrs
         .iter()
-        .find(|attr| attr.path.is_ident("repr"))
+        .find(|attr| attr.path().is_ident("repr"))
         .ok_or_else(|| {
             syn::Error::new_spanned(
                 &s.ast().ident,
