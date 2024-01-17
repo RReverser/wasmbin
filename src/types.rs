@@ -182,6 +182,8 @@ encode_decode_as!(MemType, {
 pub enum RefType {
     Func = 0x70,
     Extern = 0x6F,
+    #[cfg(feature = "exception-handling")]
+    Exception = 0x69,
 }
 
 /// [Table type](https://webassembly.github.io/spec/core/binary/types.html#table-types).

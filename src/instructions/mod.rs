@@ -145,6 +145,10 @@ pub enum Instruction {
     LoopStart(BlockType) = OP_CODE_LOOP_START,
     IfStart(BlockType) = OP_CODE_IF_START,
     IfElse = 0x05,
+    #[cfg(feature = "exception-handling")]
+    Throw(crate::indices::ExceptionId) = 0x08,
+    #[cfg(feature = "exception-handling")]
+    ThrowRef = 0x0A,
     End = OP_CODE_END,
     Br(LabelId) = 0x0C,
     BrIf(LabelId) = 0x0D,
@@ -162,6 +166,8 @@ pub enum Instruction {
     Drop = 0x1A,
     Select = 0x1B,
     SelectWithTypes(Vec<ValueType>) = 0x1C,
+    #[cfg(feature = "exception-handling")]
+    TryTable(TryTable) = 0x1F,
     LocalGet(LocalId) = 0x20,
     LocalSet(LocalId) = 0x21,
     LocalTee(LocalId) = 0x22,
@@ -345,3 +351,8 @@ pub use simd::SIMD;
 pub mod threads;
 #[cfg(feature = "threads")]
 pub use threads::Atomic;
+
+#[cfg(feature = "exception-handling")]
+pub mod exceptions;
+#[cfg(feature = "exception-handling")]
+pub use exceptions::{Catch, TryTable};
