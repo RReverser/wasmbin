@@ -288,44 +288,44 @@ pub enum ElemKind {
 
 /// A single [element](https://webassembly.github.io/spec/core/binary/modules.html#binary-elem).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum Element {
     ActiveWithFuncs {
         offset: Expression,
         funcs: Vec<FuncId>,
-    } = 0x00,
+    } = 0,
     PassiveWithFuncs {
         kind: ElemKind,
         funcs: Vec<FuncId>,
-    } = 0x01,
+    } = 1,
     ActiveWithTableAndFuncs {
         table: TableId,
         offset: Expression,
         kind: ElemKind,
         funcs: Vec<FuncId>,
-    } = 0x02,
+    } = 2,
     DeclarativeWithFuncs {
         kind: ElemKind,
         funcs: Vec<FuncId>,
-    } = 0x03,
+    } = 3,
     ActiveWithExprs {
         offset: Expression,
         exprs: Vec<Expression>,
-    } = 0x04,
+    } = 4,
     PassiveWithExprs {
         ty: RefType,
         exprs: Vec<Expression>,
-    } = 0x05,
+    } = 5,
     ActiveWithTableAndExprs {
         table: TableId,
         offset: Expression,
         ty: RefType,
         exprs: Vec<Expression>,
-    } = 0x06,
+    } = 6,
     DeclarativeWithExprs {
         ty: RefType,
         exprs: Vec<Expression>,
-    } = 0x07,
+    } = 7,
 }
 
 /// Number of repeated consecutive [locals](https://webassembly.github.io/spec/core/binary/modules.html#binary-local) of a single type.
