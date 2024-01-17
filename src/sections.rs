@@ -352,11 +352,11 @@ pub struct FuncBody {
 
 /// [`Data`] segment initialization.
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum DataInit {
-    Active { offset: Expression } = 0x00,
-    Passive = 0x01,
-    ActiveWithMemory { memory: MemId, offset: Expression } = 0x02,
+    Active { offset: Expression } = 0,
+    Passive = 1,
+    ActiveWithMemory { memory: MemId, offset: Expression } = 2,
 }
 
 /// [Data segment](https://webassembly.github.io/spec/core/binary/modules.html#binary-data).
