@@ -246,5 +246,11 @@ fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) {
 fn main() {
     let tests = Tests::read_all_tests(&Path::new("tests").join("testsuite"))?;
 
-    run_tests(&Arguments::from_args(), tests).exit_if_failed();
+    let mut args = Arguments::from_args();
+    // Default to terse output as we have *a lot* of tests.
+    if args.format.is_none() {
+        args.format = Some(libtest_mimic::FormatSetting::Terse);
+    }
+
+    run_tests(&args, tests).exit_if_failed();
 }
