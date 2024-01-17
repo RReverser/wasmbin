@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{bail, ensure, Context, Error};
+use anyhow::{bail, ensure, Error};
 use fehler::throws;
+use fs_err::{read_dir, read_to_string};
 use indexmap::IndexMap;
 use libtest_mimic::{run as run_tests, Arguments, Failed, Trial};
 use rayon::prelude::*;
-use std::fs::{read_dir, read_to_string};
 use std::path::Path;
 use std::sync::Arc;
 use wasmbin::io::DecodeError;
@@ -81,7 +81,7 @@ struct Tests {
 impl Tests {
     #[throws]
     fn read_tests_from_file(&mut self, path: &Path) {
-        let src = read_to_string(path).with_context(|| path.display().to_string())?;
+        let src = read_to_string(path)?;
         let set_err_path_text = |mut err: wast::Error| {
             err.set_path(path);
             err.set_text(&src);

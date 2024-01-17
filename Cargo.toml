@@ -40,6 +40,7 @@ tempfile = "3.9.0"
 structopt = "0.3.26"
 indexmap = { version = "2.1.0", features = ["rayon"] }
 rayon = "1.8.0"
+fs-err = "2.11.0"
 
 [[bench]]
 name = "bench"
