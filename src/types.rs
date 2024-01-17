@@ -205,5 +205,5 @@ pub struct GlobalType {
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
 #[wasmbin(discriminant = 0x00)]
 pub struct ExceptionType {
-    pub func_type: FuncType,
+    pub func_type: TypeId,
 }
