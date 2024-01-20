@@ -23,9 +23,9 @@ use std::hash::Hash;
 ///
 /// Unlike `Vec<u8>`, these raw bytes are not length-prefixed when encoded.
 #[derive(Default, CustomDebug, Clone, PartialEq, Eq, Hash, Visit)]
-#[debug(with = "custom_debug::hexbuf_str")]
 pub struct UnparsedBytes {
     #[allow(missing_docs)]
+    #[debug(with = "custom_debug::hexbuf_str")]
     pub bytes: Vec<u8>,
 }
 
