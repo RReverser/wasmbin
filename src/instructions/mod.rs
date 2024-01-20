@@ -115,11 +115,48 @@ pub type Expression = Vec<Instruction>;
 impl crate::builtins::WasmbinCountable for Expression {}
 
 /// [Memory immediate argument](https://webassembly.github.io/spec/core/binary/instructions.html#memory-instructions).
-#[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(not(feature = "multi-memory"), derive(Wasmbin))]
 pub struct MemArg {
     pub align_log2: u32,
+    #[cfg(feature = "multi-memory")]
+    pub memory: MemId,
     pub offset: u32,
 }
+
+#[cfg(feature = "multi-memory")]
+const _: () = {
+    const MULTI_MEMORY_FLAG: u32 = 1 << 6;
+
+    impl Encode for MemArg {
+        fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+            if self.memory.index != 0 {
+                (self.align_log2 | MULTI_MEMORY_FLAG).encode(w)?;
+                self.memory.encode(w)?;
+            } else {
+                self.align_log2.encode(w)?;
+            }
+            self.offset.encode(w)
+        }
+    }
+
+    impl Decode for MemArg {
+        fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
+            let mut align_log2 = u32::decode(r)?;
+            let memory = if align_log2 & MULTI_MEMORY_FLAG != 0 {
+                align_log2 &= !MULTI_MEMORY_FLAG;
+                MemId::decode(r)?
+            } else {
+                MemId::from(0)
+            };
+            Ok(Self {
+                align_log2,
+                memory,
+                offset: u32::decode(r)?,
+            })
+        }
+    }
+};
 
 /// An [indirect call](https://webassembly.github.io/spec/core/binary/instructions.html#control-instructions).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]

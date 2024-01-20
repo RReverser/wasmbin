@@ -13,13 +13,16 @@
 // limitations under the License.
 
 use super::MemArg;
+#[cfg(feature = "multi-memory")]
+use crate::instructions::MemId;
 use crate::io::{Decode, DecodeError, Encode, Wasmbin};
 use crate::visit::Visit;
 
 /// Variant of [`MemArg`] with a fixed compile-time alignment.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
-#[repr(transparent)]
 pub struct AlignedMemArg<const ALIGN_LOG2: u32> {
+    #[cfg(feature = "multi-memory")]
+    pub memory: MemId,
     pub offset: u32,
 }
 
@@ -27,6 +30,8 @@ impl<const ALIGN_LOG2: u32> From<AlignedMemArg<ALIGN_LOG2>> for MemArg {
     fn from(arg: AlignedMemArg<ALIGN_LOG2>) -> MemArg {
         MemArg {
             align_log2: ALIGN_LOG2,
+            #[cfg(feature = "multi-memory")]
+            memory: arg.memory,
             offset: arg.offset,
         }
     }
@@ -44,7 +49,11 @@ impl<const ALIGN_LOG2: u32> Decode for AlignedMemArg<ALIGN_LOG2> {
         if arg.align_log2 != ALIGN_LOG2 {
             return Err(DecodeError::unsupported_discriminant::<Self>(arg.offset));
         }
-        Ok(Self { offset: arg.offset })
+        Ok(Self {
+            #[cfg(feature = "multi-memory")]
+            memory: arg.memory,
+            offset: arg.offset,
+        })
     }
 }
 

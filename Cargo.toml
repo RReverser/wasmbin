@@ -23,9 +23,16 @@ once_cell = "1.19.0"
 
 [features]
 default = []
-proposals = ["exception-handling", "extended-name-section", "tail-call", "threads"]
+proposals = [
+    "exception-handling",
+    "extended-name-section",
+    "multi-memory",
+    "tail-call",
+    "threads",
+]
 exception-handling = []
 extended-name-section = []
+multi-memory = []
 tail-call = []
 threads = []
 nightly = []
