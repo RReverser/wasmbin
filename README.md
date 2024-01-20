@@ -1,6 +1,6 @@
 # wasmbin
 
-wasmbin is a library implementing parsing and serialization WebAssembly binaries.
+wasmbin is a library implementing low-level parsing and serialization of WebAssembly binaries.
 
 ## Public API
 
