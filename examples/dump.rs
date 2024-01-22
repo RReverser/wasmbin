@@ -13,15 +13,15 @@
 // limitations under the License.
 
 use anyhow::Context;
+use clap::{Parser, Subcommand};
 use std::fs::File;
 use std::io::{BufReader, Seek};
-use structopt::StructOpt;
 use wasmbin::io::DecodeError;
 use wasmbin::sections::{Kind, Section};
 use wasmbin::visit::{Visit, VisitError};
 use wasmbin::Module;
 
-#[derive(StructOpt)]
+#[derive(Subcommand)]
 enum DumpSection {
     All,
     Custom {
@@ -43,12 +43,12 @@ enum DumpSection {
     Data,
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 struct DumpOpts {
     filename: String,
-    #[structopt(long)]
+    #[arg(long)]
     include_raw: bool,
-    #[structopt(flatten)]
+    #[command(subcommand)]
     section: DumpSection,
 }
 
@@ -68,7 +68,7 @@ fn unlazify_with_opt<T: Visit>(wasm: &mut T, include_raw: bool) -> Result<(), De
 }
 
 fn main() -> anyhow::Result<()> {
-    let opts = DumpOpts::from_args();
+    let opts = DumpOpts::parse();
     let f = File::open(opts.filename)?;
     let mut f = BufReader::new(f);
     let mut m = Module::decode_from(&mut f).with_context(|| {
