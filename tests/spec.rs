@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{bail, ensure, Error};
-use fehler::throws;
+use anyhow::{bail, ensure, Result};
 use fs_err::{read_dir, read_to_string};
 use indexmap::IndexMap;
 use libtest_mimic::{run as run_tests, Arguments, Failed, Trial};
@@ -52,8 +51,7 @@ struct Tests {
 }
 
 impl Tests {
-    #[throws]
-    fn read_tests_from_file(&mut self, path: &Path) {
+    fn read_tests_from_file(&mut self, path: &Path) -> Result<()> {
         let src = read_to_string(path)?;
         let set_err_path_text = |mut err: wast::Error| {
             err.set_path(path);
@@ -119,13 +117,13 @@ impl Tests {
                     .with_ignored_flag(is_ignored)
                 });
         }
+        Ok(())
     }
 
-    #[throws]
-    fn read_all_tests(path: &Path) -> Vec<Trial> {
+    fn read_all_tests(path: &Path) -> Result<Vec<Trial>> {
         let mut test_files = Vec::new();
 
-        let mut add_test_files_in_dir = |path: &Path| -> anyhow::Result<()> {
+        let mut add_test_files_in_dir = |path: &Path| -> Result<()> {
             for file in read_dir(path)? {
                 let path = file?.path();
                 if path.extension().map_or(false, |ext| ext == "wast") {
@@ -162,7 +160,7 @@ impl Tests {
             "Couldn't find any tests. Did you run `git submodule update --init`?"
         );
 
-        test_files
+        Ok(test_files
             .into_par_iter()
             .try_fold(Tests::default, |mut tests, path| {
                 tests.read_tests_from_file(&path)?;
@@ -175,7 +173,7 @@ impl Tests {
             .deduped
             .into_par_iter()
             .map(|(_, test)| test)
-            .collect()
+            .collect())
     }
 }
 
@@ -189,8 +187,7 @@ fn unlazify<T: Visit>(mut wasm: T) -> Result<T, DecodeError> {
     }
 }
 
-#[throws]
-fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) {
+fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) -> Result<()> {
     let orig_test_module = test_module;
     let module = match (Module::decode_from(&mut test_module).and_then(unlazify), &expect_result) {
         (Ok(ref module), Err(err)) => bail!("Expected an invalid module definition with an error: {err}\nParsed part: {parsed_part:02X?}\nGot module: {module:#?}", parsed_part = &orig_test_module[..orig_test_module.len() - test_module.len()]),
@@ -198,7 +195,7 @@ fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) {
             "Expected a valid module definition, but got an error\nModule: {test_module:02X?}\nError: {err:#}"
         ),
         (Ok(module), Ok(())) => module,
-        (Err(_), Err(_)) => return,
+        (Err(_), Err(_)) => return Ok(()),
     };
     let out = module.encode_into(Vec::new())?;
     if out != test_module {
@@ -212,10 +209,10 @@ fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) {
             "Roundtrip mismatch. Old: {module:#?}\nNew: {module2:#?}"
         );
     }
+    Ok(())
 }
 
-#[throws]
-fn main() {
+fn main() -> Result<()> {
     let tests = Tests::read_all_tests(&Path::new("tests").join("testsuite"))?;
 
     let mut args = Arguments::from_args();
@@ -224,5 +221,5 @@ fn main() {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
 
-    run_tests(&args, tests).exit_if_failed();
+    run_tests(&args, tests).exit()
 }

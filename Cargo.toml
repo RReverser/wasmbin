@@ -41,7 +41,6 @@ nightly = []
 criterion = "0.5.1"
 libtest-mimic = "0.7.0"
 wast = "70.0.0"
-fehler = "1.0.0"
 anyhow = { version = "1.0.79", features = ["backtrace"] }
 tempfile = "3.9.0"
 structopt = "0.3.26"
