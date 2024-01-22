@@ -1,6 +1,6 @@
 [package]
 name = "wasmbin"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Ingvar Stepanyan <me@rreverser.com>"]
 edition = "2021"
 license = "Apache-2.0"
