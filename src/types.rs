@@ -167,25 +167,63 @@ enum MemTypeRepr {
     #[cfg(feature = "custom-page-sizes")]
     UnsharedMinCustom {
         min: u32,
-        page_size_log2: u32,
+        page_size: PageSize,
     } = 0b1000,
     #[cfg(feature = "custom-page-sizes")]
     UnsharedMinMaxCustom {
         min: u32,
         max: u32,
-        page_size_log2: u32,
+        page_size: PageSize,
     } = 0b1001,
     #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
     SharedMinCustom {
         min: u32,
-        page_size_log2: u32,
+        page_size: PageSize,
     } = 0b1010,
     #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
     SharedMinMaxCustom {
         min: u32,
         max: u32,
-        page_size_log2: u32,
+        page_size: PageSize,
     } = 0b1011,
+}
+
+#[cfg(feature = "custom-page-sizes")]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+pub struct PageSize(u32);
+
+#[cfg(feature = "custom-page-sizes")]
+impl PageSize {
+    /// Minimum supported page size (pagesize 1)
+    const MIN: Self = Self::new(0).unwrap();
+
+    /// Default webassembly page size (pagesize 65536)
+    const DEFAULT: Self = Self::new(16).unwrap();
+
+    /// Returns a custom page size that is valid acording to the spec
+    const fn new(size_log2: u32) -> Option<Self> {
+        if size_log2 <= 64 {
+            Some(Self(size_log2))
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(feature = "custom-page-sizes")]
+impl Encode for PageSize {
+    fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+        self.0.encode(w)
+    }
+}
+
+#[cfg(feature = "custom-page-sizes")]
+impl Decode for PageSize {
+    fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
+        u32::decode(r).and_then(|x| {
+            PageSize::new(x).ok_or(DecodeError::unsupported_discriminant::<PageSize>(x))
+        })
+    }
 }
 
 /// [Memory type](https://webassembly.github.io/spec/core/binary/types.html#memory-types).
@@ -196,7 +234,7 @@ enum MemTypeRepr {
 #[derive(WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
 pub struct MemType {
     #[cfg(feature = "custom-page-sizes")]
-    pub page_size_log2: Option<u32>,
+    pub page_size: Option<PageSize>,
     #[cfg(feature = "threads")]
     pub is_shared: bool,
     pub limits: Limits,
@@ -212,30 +250,30 @@ encode_decode_as!(MemType, {
 
 #[cfg(all(not(feature = "threads"), feature = "custom-page-sizes"))]
 encode_decode_as!(MemType, {
-    (MemType { page_size_log2: None, limits: Limits { min, max: None } }) <=> (MemTypeRepr::Unshared(LimitsRepr::Min { min })),
-    (MemType { page_size_log2: None, limits: Limits { min, max: Some(max) } }) <=> (MemTypeRepr::Unshared(LimitsRepr::MinMax { min, max })),
-    (MemType { page_size_log2: Some(page_size_log2), limits: Limits { min, max: None } }) <=> (MemTypeRepr::UnsharedMinCustom { min, page_size_log2 }),
-    (MemType { page_size_log2: Some(page_size_log2), limits: Limits { min, max: Some(max) } }) <=> (MemTypeRepr::UnsharedMinMaxCustom { min, max, page_size_log2 }),
+    (MemType { page_size: None, limits: Limits { min, max: None } }) <=> (MemTypeRepr::Unshared(LimitsRepr::Min { min })),
+    (MemType { page_size: None, limits: Limits { min, max: Some(max) } }) <=> (MemTypeRepr::Unshared(LimitsRepr::MinMax { min, max })),
+    (MemType { page_size: Some(page_size), limits: Limits { min, max: None } }) <=> (MemTypeRepr::UnsharedMinCustom { min, page_size }),
+    (MemType { page_size: Some(page_size), limits: Limits { min, max: Some(max) } }) <=> (MemTypeRepr::UnsharedMinMaxCustom { min, max, page_size }),
 });
 
 #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
 encode_decode_as!(MemType, {
-    (MemType { is_shared: false, page_size_log2: None, limits: Limits { min, max: None } })
+    (MemType { is_shared: false, page_size: None, limits: Limits { min, max: None } })
         <=> (MemTypeRepr::Unshared(LimitsRepr::Min { min })),
-    (MemType { is_shared: false, page_size_log2: None, limits: Limits { min, max: Some(max) } })
+    (MemType { is_shared: false, page_size: None, limits: Limits { min, max: Some(max) } })
         <=> (MemTypeRepr::Unshared(LimitsRepr::MinMax { min, max })),
-    (MemType { is_shared: true, page_size_log2: None, limits: Limits { min, max: None } })
+    (MemType { is_shared: true, page_size: None, limits: Limits { min, max: None } })
         <=> (MemTypeRepr::SharedMin { min }),
-    (MemType { is_shared: true, page_size_log2: None, limits: Limits { min, max: Some(max) } })
+    (MemType { is_shared: true, page_size: None, limits: Limits { min, max: Some(max) } })
         <=> (MemTypeRepr::SharedMinMax { min, max }),
-    (MemType { is_shared: false, page_size_log2: Some(page_size_log2), limits: Limits { min, max: None } })
-        <=> (MemTypeRepr::UnsharedMinCustom { min, page_size_log2 }),
-    (MemType { is_shared: false, page_size_log2: Some(page_size_log2), limits: Limits { min, max: Some(max) } })
-        <=> (MemTypeRepr::UnsharedMinMaxCustom { min, max, page_size_log2 }),
-    (MemType { is_shared: true, page_size_log2: Some(page_size_log2), limits: Limits { min, max: None } })
-        <=> (MemTypeRepr::SharedMinCustom { min, page_size_log2 }),
-    (MemType { is_shared: true, page_size_log2: Some(page_size_log2), limits: Limits { min, max: Some(max) } })
-        <=> (MemTypeRepr::SharedMinMaxCustom { min, max, page_size_log2 }),
+    (MemType { is_shared: false, page_size: Some(page_size), limits: Limits { min, max: None } })
+        <=> (MemTypeRepr::UnsharedMinCustom { min, page_size }),
+    (MemType { is_shared: false, page_size: Some(page_size), limits: Limits { min, max: Some(max) } })
+        <=> (MemTypeRepr::UnsharedMinMaxCustom { min, max, page_size }),
+    (MemType { is_shared: true, page_size: Some(page_size), limits: Limits { min, max: None } })
+        <=> (MemTypeRepr::SharedMinCustom { min, page_size }),
+    (MemType { is_shared: true, page_size: Some(page_size), limits: Limits { min, max: Some(max) } })
+        <=> (MemTypeRepr::SharedMinMaxCustom { min, max, page_size }),
 });
 
 /// [Reference type](https://webassembly.github.io/spec/core/binary/types.html#reference-types).
