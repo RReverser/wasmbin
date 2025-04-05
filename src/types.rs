@@ -195,13 +195,13 @@ pub struct PageSize(u32);
 #[cfg(feature = "custom-page-sizes")]
 impl PageSize {
     /// Minimum supported page size (pagesize 1)
-    const MIN: Self = Self::new(0).unwrap();
+    pub const MIN: Self = Self::new(0).unwrap();
 
     /// Default webassembly page size (pagesize 65536)
-    const DEFAULT: Self = Self::new(16).unwrap();
+    pub const DEFAULT: Self = Self::new(16).unwrap();
 
     /// Returns a custom page size that is valid acording to the spec
-    const fn new(size_log2: u32) -> Option<Self> {
+    pub const fn new(size_log2: u32) -> Option<Self> {
         if size_log2 <= 64 {
             Some(Self(size_log2))
         } else {
