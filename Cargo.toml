@@ -27,6 +27,7 @@ proposals = [
     "exception-handling",
     "extended-name-section",
     "threads",
+    "custom-page-sizes",
 ]
 exception-handling = []
 extended-name-section = []
