@@ -35,6 +35,8 @@ const IGNORED_ERRORS: &[&str] = &[
     "zero byte expected",
     // We don't perform full function analysis either.
     "too many locals",
+    // We don't validate whether instructions access out-of bounds memory.
+    "malformed memop flags",
 ];
 
 const IGNORED_MODULES: &[&[u8]] = &[
@@ -42,6 +44,31 @@ const IGNORED_MODULES: &[&[u8]] = &[
     #[cfg(feature = "threads")]
     &[
         0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x03, 0x01, 0x02, 0x00,
+    ],
+    // Wasmbin does not yet support the memory64 proposal
+    #[cfg(feature = "custom-page-sizes")]
+    &[
+        0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x02,
+        0x10, 0x01, 0x04, 0x74, 0x65, 0x73, 0x74, 0x07, 0x75, 0x6E, 0x6B, 0x6E, 0x6F, 0x77, 0x6E,
+        0x00, 0x00, 0x05, 0x0A, 0x01, 0x0C, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x40, 0x10,
+    ],
+    #[cfg(feature = "custom-page-sizes")]
+    &[
+        0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x0A, 0x01, 0x0C, 0x81, 0x80, 0x80,
+        0x80, 0x80, 0x80, 0x40, 0x10,
+    ],
+    #[cfg(feature = "custom-page-sizes")]
+    &[
+        0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x02,
+        0x0F, 0x01, 0x04, 0x74, 0x65, 0x73, 0x74, 0x06, 0x69, 0x6D, 0x70, 0x6F, 0x72, 0x74, 0x00,
+        0x00, 0x05, 0x0D, 0x01, 0x0C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+        0x00,
+    ],
+    // Wasmbin correctly fails to parse i32 memory size that is encoded as an i64
+    #[cfg(feature = "custom-page-sizes")]
+    &[
+        0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x08, 0x01, 0x08, 0x80, 0x80, 0x80,
+        0x80, 0x10, 0x00,
     ],
 ];
 
@@ -84,7 +111,7 @@ impl Tests {
                     ..
                 } => (module, Err(message.to_owned())),
                 // Expect successful parsing for regular AST modules.
-                wast::WastDirective::Wat(module) => (module, Ok(())),
+                wast::WastDirective::Module(module) => (module, Ok(())),
                 // Counter-intuitively, expect successful parsing for modules that are supposed
                 // to error out at runtime or linking stage, too.
                 wast::WastDirective::AssertInvalid { module, .. } => (module, Ok(())),
@@ -154,6 +181,7 @@ impl Tests {
         read_proposal_tests!("multi-memory");
         read_proposal_tests!("tail-call");
         read_proposal_tests!(? "threads");
+        read_proposal_tests!(? "custom-page-sizes");
 
         ensure!(
             !test_files.is_empty(),
@@ -192,7 +220,12 @@ fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) -> Result
     let module = match (Module::decode_from(&mut test_module).and_then(unlazify), &expect_result) {
         (Ok(ref module), Err(err)) => bail!("Expected an invalid module definition with an error: {err}\nParsed part: {parsed_part:02X?}\nGot module: {module:#?}", parsed_part = &orig_test_module[..orig_test_module.len() - test_module.len()]),
         (Err(err), Ok(())) => bail!(
-            "Expected a valid module definition, but got an error\nModule: {test_module:02X?}\nError: {err:#}"
+            "Expected a valid module definition, but got an error\nModule: [{}]\nError: {err:#}",
+            orig_test_module
+                .iter()
+                .map(|b| format!("0x{:02X}", b))
+                .collect::<Vec<_>>()
+                .join(", ")
         ),
         (Ok(module), Ok(())) => module,
         (Err(_), Err(_)) => return Ok(()),

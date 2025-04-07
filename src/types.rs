@@ -189,7 +189,7 @@ enum MemTypeRepr {
 }
 
 #[cfg(feature = "custom-page-sizes")]
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Visit)]
 pub struct PageSize(u32);
 
 #[cfg(feature = "custom-page-sizes")]
