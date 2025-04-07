@@ -200,7 +200,7 @@ impl PageSize {
     /// Default webassembly page size (pagesize 65536)
     pub const DEFAULT: Self = Self::new(16).unwrap();
 
-    /// Returns a custom page size that is valid acording to the spec
+    /// Returns a custom page size that is valid according to the spec
     pub const fn new(size_log2: u32) -> Option<Self> {
         if size_log2 <= 64 {
             Some(Self(size_log2))
