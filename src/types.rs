@@ -141,8 +141,8 @@ impl Debug for Limits {
 #[derive(Wasmbin)]
 #[repr(u8)]
 enum LimitsRepr {
-    Min { min: u32 } = 0b0000,
-    MinMax { min: u32, max: u32 } = 0b0001,
+    Min { min: u32 } = 0x00,
+    MinMax { min: u32, max: u32 } = 0x01,
 }
 
 encode_decode_as!(Limits, {
@@ -158,34 +158,34 @@ enum MemTypeRepr {
     #[cfg(feature = "threads")]
     SharedMin {
         min: u32,
-    } = 0b0010,
+    } = 0x02,
     #[cfg(feature = "threads")]
     SharedMinMax {
         min: u32,
         max: u32,
-    } = 0b0011,
+    } = 0x03,
     #[cfg(feature = "custom-page-sizes")]
     UnsharedMinCustom {
         min: u32,
         page_size: PageSize,
-    } = 0b1000,
+    } = 0x08,
     #[cfg(feature = "custom-page-sizes")]
     UnsharedMinMaxCustom {
         min: u32,
         max: u32,
         page_size: PageSize,
-    } = 0b1001,
+    } = 0x09,
     #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
     SharedMinCustom {
         min: u32,
         page_size: PageSize,
-    } = 0b1010,
+    } = 0x0A,
     #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
     SharedMinMaxCustom {
         min: u32,
         max: u32,
         page_size: PageSize,
-    } = 0b1011,
+    } = 0x0B,
 }
 
 #[cfg(feature = "custom-page-sizes")]
