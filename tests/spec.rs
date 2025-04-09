@@ -220,7 +220,7 @@ fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) -> Result
     let module = match (Module::decode_from(&mut test_module).and_then(unlazify), &expect_result) {
         (Ok(ref module), Err(err)) => bail!("Expected an invalid module definition with an error: {err}\nParsed part: {parsed_part:02X?}\nGot module: {module:#?}", parsed_part = &orig_test_module[..orig_test_module.len() - test_module.len()]),
         (Err(err), Ok(())) => bail!(
-            "Error: {err:#}\nExpected a valid module definition, but got an error\nModule: [{orig_test_module:#02X?}]"
+            "Error: {err:#}\nExpected a valid module definition, but got an error\nModule: {orig_test_module:#02X?}"
         ),
         (Ok(module), Ok(())) => module,
         (Err(_), Err(_)) => return Ok(()),
