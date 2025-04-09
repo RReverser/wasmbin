@@ -21,7 +21,7 @@ use crate::visit::Visit;
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
 pub struct AlignedMemArg<const ALIGN_LOG2: u32> {
     pub memory: MemId,
-    pub offset: u32,
+    pub offset: MemSize,
 }
 
 impl<const ALIGN_LOG2: u32> From<AlignedMemArg<ALIGN_LOG2>> for MemArg {

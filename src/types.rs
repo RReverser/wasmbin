@@ -16,6 +16,7 @@
 
 use crate::builtins::WasmbinCountable;
 use crate::indices::TypeId;
+use crate::instructions::MemSize;
 use crate::io::{
     encode_decode_as, Decode, DecodeError, DecodeWithDiscriminant, Encode, PathItem, Wasmbin,
 };
@@ -121,16 +122,11 @@ impl Debug for FuncType {
     }
 }
 
-#[cfg(not(feature = "memory64"))]
-type LimitType = u32;
-#[cfg(feature = "memory64")]
-type LimitType = u64;
-
 /// [Limits](https://webassembly.github.io/spec/core/binary/types.html#limits) type.
 #[derive(PartialEq, Eq, Hash, Clone, Visit)]
 pub struct Limits {
-    pub min: LimitType,
-    pub max: Option<LimitType>,
+    pub min: MemSize,
+    pub max: Option<MemSize>,
 }
 
 impl Debug for Limits {
@@ -146,8 +142,8 @@ impl Debug for Limits {
 #[derive(Wasmbin)]
 #[repr(u8)]
 enum LimitsRepr {
-    Min { min: LimitType } = 0x00,
-    MinMax { min: LimitType, max: LimitType } = 0x01,
+    Min { min: MemSize } = 0x00,
+    MinMax { min: MemSize, max: MemSize } = 0x01,
 }
 
 encode_decode_as!(Limits, {
@@ -166,62 +162,62 @@ enum MemTypeRepr {
     Unshared(LimitsRepr),
     #[cfg(feature = "threads")]
     SharedMin {
-        min: LimitType,
+        min: MemSize,
     } = 0x02,
     #[cfg(feature = "threads")]
     SharedMinMax {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
     } = 0x03,
     #[cfg(feature = "memory64")]
     UnsharedMin64 {
-        min: LimitType,
+        min: MemSize,
     } = 0x04,
     #[cfg(feature = "memory64")]
     UnsharedMinMax64 {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
     } = 0x05,
     #[cfg(all(feature = "threads", feature = "memory64"))]
     SharedMin64 {
-        min: LimitType,
+        min: MemSize,
     } = 0x06,
     #[cfg(all(feature = "threads", feature = "memory64"))]
     SharedMinMax64 {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
     } = 0x07,
     #[cfg(feature = "custom-page-sizes")]
     UnsharedMinCustom {
-        min: LimitType,
+        min: MemSize,
         page_size: PageSize,
     } = 0x08,
     #[cfg(feature = "custom-page-sizes")]
     UnsharedMinMaxCustom {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
         page_size: PageSize,
     } = 0x09,
     #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
     SharedMinCustom {
-        min: LimitType,
+        min: MemSize,
         page_size: PageSize,
     } = 0x0A,
     #[cfg(all(feature = "threads", feature = "custom-page-sizes"))]
     SharedMinMaxCustom {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
         page_size: PageSize,
     } = 0x0B,
     #[cfg(all(feature = "memory64", feature = "custom-page-sizes"))]
     UnsharedMinCustom64 {
-        min: LimitType,
+        min: MemSize,
         page_size: PageSize,
     } = 0x0C,
     #[cfg(all(feature = "memory64", feature = "custom-page-sizes"))]
     UnsharedMinMaxCustom64 {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
         page_size: PageSize,
     } = 0x0D,
     #[cfg(all(
@@ -230,7 +226,7 @@ enum MemTypeRepr {
         feature = "custom-page-sizes"
     ))]
     SharedMinCustom64 {
-        min: LimitType,
+        min: MemSize,
         page_size: PageSize,
     } = 0x0E,
     #[cfg(all(
@@ -239,8 +235,8 @@ enum MemTypeRepr {
         feature = "custom-page-sizes"
     ))]
     SharedMinMaxCustom64 {
-        min: LimitType,
-        max: LimitType,
+        min: MemSize,
+        max: MemSize,
         page_size: PageSize,
     } = 0x0F,
 }
