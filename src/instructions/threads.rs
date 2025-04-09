@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::MemArg;
+use super::{MemArg, MemSize};
 use crate::instructions::MemId;
 use crate::io::{Decode, DecodeError, Encode, Wasmbin};
 use crate::visit::Visit;
