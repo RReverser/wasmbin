@@ -208,6 +208,15 @@ impl PageSize {
             None
         }
     }
+
+    pub const fn size_log2(&self) -> u32 {
+        self.0
+    }
+
+    /// Returns human-readable page size as bytes
+    pub const fn size(&self) -> u64 {
+        u64::pow(2, self.0)
+    }
 }
 
 #[cfg(feature = "custom-page-sizes")]
