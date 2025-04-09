@@ -28,11 +28,13 @@ proposals = [
     "extended-name-section",
     "threads",
     "custom-page-sizes",
+    "memory64",
 ]
 exception-handling = []
 extended-name-section = []
 threads = []
 custom-page-sizes = []
+memory64 = []
 nightly = []
 
 [dev-dependencies]
