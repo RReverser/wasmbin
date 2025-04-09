@@ -15,6 +15,7 @@ Following WebAssembly proposals are supported in addition to the core spec and c
 - [`exception-handling`](https://github.com/WebAssembly/exception-handling)
 - [`extended-name-section`](https://github.com/WebAssembly/extended-name-section)
 - [`threads`](https://github.com/WebAssembly/threads)
+- [`custom-page-sizes`](https://github.com/WebAssembly/custom-page-sizes)
 
 ## Motivation
 
