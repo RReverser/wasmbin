@@ -143,6 +143,40 @@ pub trait Decode: Sized {
 
 macro_rules! encode_decode_as {
     ($ty:ty, {
+        $($(cfg($($cfg_inner:tt)*))? | $lhs:tt <=> $rhs:tt,)*
+    } $(, |$other:pat_param| $other_handler:expr)?) => {
+        impl $crate::io::Encode for $ty {
+            #[allow(unused_parens)]
+            fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+                match *self {
+                    $(
+                        $(
+                            #[cfg($($cfg_inner)*)]
+                        )?
+                        $lhs => $rhs,
+                    )*
+                }
+                .encode(w)
+            }
+        }
+
+        impl $crate::io::Decode for $ty {
+            #[allow(unused_parens)]
+            fn decode(r: &mut impl std::io::Read) -> Result<Self, $crate::io::DecodeError> {
+                Ok(match $crate::io::Decode::decode(r)? {
+                    $(
+                        $(
+                            #[cfg($($cfg_inner)*)]
+                        )?
+                        $rhs => $lhs,
+                    )*
+                    $($other => return $other_handler)?
+                })
+            }
+        }
+    };
+
+    ($ty:ty, {
         $($lhs:tt <=> $rhs:tt,)*
     } $(, |$other:pat_param| $other_handler:expr)?) => {
         impl $crate::io::Encode for $ty {
