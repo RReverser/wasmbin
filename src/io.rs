@@ -143,7 +143,7 @@ pub trait Decode: Sized {
 
 macro_rules! encode_decode_as {
     ($ty:ty, {
-        $($(cfg($($cfg_inner:tt)*))? | $lhs:tt <=> $rhs:tt,)*
+        $($(cfg($($cfg_inner:tt)*))? & $lhs:tt <=> $rhs:tt,)*
     } $(, |$other:pat_param| $other_handler:expr)?) => {
         impl $crate::io::Encode for $ty {
             #[allow(unused_parens)]

@@ -314,7 +314,7 @@ pub struct MemType {
     feature = "custom-page-sizes"
 ))]
 encode_decode_as!(MemType, {
-    | (MemType {
+    & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         #[cfg(feature = "threads")]
@@ -323,7 +323,7 @@ encode_decode_as!(MemType, {
         page_size: None,
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::Unshared(LimitsRepr::Min { min })),
-    | (MemType {
+    & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         #[cfg(feature = "threads")]
@@ -332,7 +332,7 @@ encode_decode_as!(MemType, {
         page_size: None,
         limits: Limits { min, max: Some(max) },
     }) <=> (MemTypeRepr::Unshared(LimitsRepr::MinMax { min, max })),
-    cfg(feature = "threads") | (MemType {
+    cfg(feature = "threads") & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         is_shared: true,
@@ -340,7 +340,7 @@ encode_decode_as!(MemType, {
         page_size: None,
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::SharedMin { min }),
-    cfg(feature = "threads") | (MemType {
+    cfg(feature = "threads") & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         is_shared: true,
@@ -348,7 +348,7 @@ encode_decode_as!(MemType, {
         page_size: None,
         limits: Limits { min, max: Some(max) },
     }) <=> (MemTypeRepr::SharedMinMax { min, max }),
-    cfg(feature = "memory64") | (MemType {
+    cfg(feature = "memory64") & (MemType {
         is_mem64: true,
         #[cfg(feature = "threads")]
         is_shared: false,
@@ -356,7 +356,7 @@ encode_decode_as!(MemType, {
         page_size: None,
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::UnsharedMin64 { min }),
-    cfg(feature = "memory64") | (MemType {
+    cfg(feature = "memory64") & (MemType {
         is_mem64: true,
         #[cfg(feature = "threads")]
         is_shared: false,
@@ -364,21 +364,21 @@ encode_decode_as!(MemType, {
         page_size: None,
         limits: Limits { min, max: Some(max) },
     }) <=> (MemTypeRepr::UnsharedMinMax64 { min, max }),
-    cfg(all(feature = "threads", feature = "memory64")) | (MemType {
+    cfg(all(feature = "threads", feature = "memory64")) & (MemType {
         is_mem64: true,
         is_shared: true,
         #[cfg(feature = "custom-page-sizes")]
         page_size: None,
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::SharedMin64 { min }),
-    cfg(all(feature = "threads", feature = "memory64")) | (MemType {
+    cfg(all(feature = "threads", feature = "memory64")) & (MemType {
         is_mem64: true,
         is_shared: true,
         #[cfg(feature = "custom-page-sizes")]
         page_size: None,
         limits: Limits { min, max: Some(max) },
     }) <=> (MemTypeRepr::SharedMinMax64 { min, max }),
-    cfg(feature = "custom-page-sizes") | (MemType {
+    cfg(feature = "custom-page-sizes") & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         #[cfg(feature = "threads")]
@@ -386,7 +386,7 @@ encode_decode_as!(MemType, {
         page_size: Some(page_size),
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::UnsharedMinCustom { min, page_size }),
-    cfg(feature = "custom-page-sizes") | (MemType {
+    cfg(feature = "custom-page-sizes") & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         #[cfg(feature = "threads")]
@@ -394,28 +394,28 @@ encode_decode_as!(MemType, {
         page_size: Some(page_size),
         limits: Limits { min, max: Some(max) },
     }) <=> (MemTypeRepr::UnsharedMinMaxCustom { min, max, page_size }),
-    cfg(all(feature = "threads", feature = "custom-page-sizes")) | (MemType {
+    cfg(all(feature = "threads", feature = "custom-page-sizes")) & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         is_shared: true,
         page_size: Some(page_size),
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::SharedMinCustom { min, page_size }),
-    cfg(all(feature = "threads", feature = "custom-page-sizes")) | (MemType {
+    cfg(all(feature = "threads", feature = "custom-page-sizes")) & (MemType {
         #[cfg(feature = "memory64")]
         is_mem64: false,
         is_shared: true,
         page_size: Some(page_size),
         limits: Limits { min, max: Some(max) },
     }) <=> (MemTypeRepr::SharedMinMaxCustom { min, max, page_size }),
-    cfg(all(feature = "memory64", feature = "custom-page-sizes")) | (MemType {
+    cfg(all(feature = "memory64", feature = "custom-page-sizes")) & (MemType {
         is_mem64: true,
         #[cfg(feature = "threads")]
         is_shared: false,
         page_size: Some(page_size),
         limits: Limits { min, max: None },
     }) <=> (MemTypeRepr::UnsharedMinCustom64 { min, page_size }),
-    cfg(all(feature = "memory64", feature = "custom-page-sizes")) | (MemType {
+    cfg(all(feature = "memory64", feature = "custom-page-sizes")) & (MemType {
         is_mem64: true,
         #[cfg(feature = "threads")]
         is_shared: false,
@@ -426,7 +426,7 @@ encode_decode_as!(MemType, {
         feature = "threads",
         feature = "memory64",
         feature = "custom-page-sizes"
-    )) | (MemType {
+    )) & (MemType {
         is_mem64: true,
         is_shared: true,
         page_size: Some(page_size),
@@ -436,7 +436,7 @@ encode_decode_as!(MemType, {
         feature = "threads",
         feature = "memory64",
         feature = "custom-page-sizes"
-    )) | (MemType {
+    )) & (MemType {
         is_mem64: true,
         is_shared: true,
         page_size: Some(page_size),
