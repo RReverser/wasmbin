@@ -16,6 +16,7 @@ Following WebAssembly proposals are supported in addition to the core spec and c
 - [`extended-name-section`](https://github.com/WebAssembly/extended-name-section)
 - [`threads`](https://github.com/WebAssembly/threads)
 - [`custom-page-sizes`](https://github.com/WebAssembly/custom-page-sizes)
+- [`memory64`](https://github.com/WebAssembly/memory64)
 
 ## Motivation
 
