@@ -26,21 +26,19 @@ default = []
 proposals = [
     "exception-handling",
     "extended-name-section",
-    "multi-memory",
-    "tail-call",
     "threads",
+    "custom-page-sizes",
 ]
 exception-handling = []
 extended-name-section = []
-multi-memory = []
-tail-call = []
 threads = []
+custom-page-sizes = []
 nightly = []
 
 [dev-dependencies]
 criterion = "0.5.1"
 libtest-mimic = "0.7.0"
-wast = "70.0.0"
+wast = "228.0.0"
 anyhow = { version = "1.0.79", features = ["backtrace"] }
 tempfile = "3.9.0"
 indexmap = { version = "2.1.0", features = ["rayon"] }

@@ -14,13 +14,12 @@ Following WebAssembly proposals are supported in addition to the core spec and c
 
 - [`exception-handling`](https://github.com/WebAssembly/exception-handling)
 - [`extended-name-section`](https://github.com/WebAssembly/extended-name-section)
-- [`multi-memory`](https://github.com/WebAssembly/multi-memory)
-- [`tail-call`](https://github.com/WebAssembly/tail-call)
 - [`threads`](https://github.com/WebAssembly/threads)
+- [`custom-page-sizes`](https://github.com/WebAssembly/custom-page-sizes)
 
 ## Motivation
 
-Original blog post explaining motivation and internals: 
+Original blog post explaining motivation and internals:
 [wasmbin: a self-generating WebAssembly parser & serializer](https://rreverser.com/wasmbin-yet-another-webassembly-parser-serializer/).
 
 This crate intends to provide a low-level representation of the WebAssembly module that is fully described by Rust type system. It also leverages the said type system in conjunction with custom proc-macros to autogenerate parsing/serialization/visitation code for any complex types (structures and enums).
