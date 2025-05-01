@@ -11,8 +11,8 @@ repository = "https://github.com/RReverser/wasmbin"
 proc-macro = true
 
 [dependencies]
-synstructure = "0.13.0"
-quote = "1.0.35"
-proc-macro2 = "1.0.76"
-syn = "2.0.48"
+synstructure = "0.13.2"
+quote = "1.0.40"
+proc-macro2 = "1.0.95"
+syn = "2.0.101"
 thiserror = "2.0.12"
