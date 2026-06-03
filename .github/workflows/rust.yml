@@ -25,13 +25,13 @@ jobs:
         components: rustfmt
     - name: Check formatting
       run: cargo +nightly fmt --all -- --check
-    - name: Run tests without proposals
+    - name: Run tests without features
       run: cargo +stable test -- -q
-    - name: Run tests with proposals enabled
-      run: cargo +stable test --features=proposals -- -q
+    - name: Run tests with features enabled
+      run: cargo +stable test --features=proposals,serde -- -q
     - name: Run `clippy check`
       uses: giraffate/clippy-action@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         reporter: github-pr-check
-        clippy_flags: --workspace --features=proposals --all-targets -q -- -D warnings
+        clippy_flags: --workspace --features=proposals,serde --all-targets -q -- -D warnings
