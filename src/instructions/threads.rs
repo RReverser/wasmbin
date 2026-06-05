@@ -16,9 +16,12 @@ use super::MemArg;
 use crate::instructions::MemId;
 use crate::io::{Decode, DecodeError, Encode, Wasmbin};
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Variant of [`MemArg`] with a fixed compile-time alignment.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AlignedMemArg<const ALIGN_LOG2: u32> {
     pub memory: MemId,
     pub offset: u64,
@@ -60,6 +63,7 @@ pub type MemArg64 = AlignedMemArg<3>;
 
 /// [Atomic memory instructions](https://webassembly.github.io/threads/core/binary/instructions.html#atomic-memory-instructions).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum Atomic {
     Wake(MemArg32) = 0x00,

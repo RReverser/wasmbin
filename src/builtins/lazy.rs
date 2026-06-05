@@ -17,15 +17,20 @@ use crate::io::{Decode, DecodeError, DecodeErrorKind, Encode};
 use crate::visit::{Visit, VisitError};
 use custom_debug::Debug as CustomDebug;
 use once_cell::sync::OnceCell;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize, Serializer};
 use std::hash::Hash;
 
 /// A storage for unparsed bytes.
 ///
 /// Unlike `Vec<u8>`, these raw bytes are not length-prefixed when encoded.
 #[derive(Default, CustomDebug, Clone, PartialEq, Eq, Hash, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct UnparsedBytes {
     #[expect(missing_docs)]
     #[debug(with = "custom_debug::hexbuf_str")]
+    #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
     pub bytes: Vec<u8>,
 }
 
@@ -92,6 +97,8 @@ enum LazyStatus<T> {
 /// and if so, re-encode it. Otherwise it will do a cheap copy of the original
 /// raw bytes.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(from = "T"))]
 pub struct Lazy<T> {
     status: LazyStatus<T>,
 }
@@ -226,6 +233,21 @@ impl<T: Decode + Hash> Hash for Lazy<T> {
 }
 
 impl<T: WasmbinCountable> WasmbinCountable for Lazy<T> {}
+
+#[cfg(feature = "serde")]
+impl<T> Serialize for Lazy<T>
+where
+    T: Decode + Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.try_contents()
+            .map_err(serde::ser::Error::custom)?
+            .serialize(serializer)
+    }
+}
 
 impl<T: Decode + Visit> Visit for Lazy<T> {
     fn visit_children<'a, VisitT: 'static, E, F: FnMut(&'a VisitT) -> Result<(), E>>(

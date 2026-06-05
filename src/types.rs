@@ -20,6 +20,8 @@ use crate::io::{
     Decode, DecodeError, DecodeWithDiscriminant, Encode, PathItem, Wasmbin, encode_decode_as,
 };
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt::{self, Debug, Formatter};
 
@@ -27,6 +29,7 @@ const OP_CODE_EMPTY_BLOCK: u8 = 0x40;
 
 /// [Value type](https://webassembly.github.io/spec/core/binary/types.html#value-types).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum ValueType {
     /// [Vector types](https://webassembly.github.io/spec/core/binary/types.html#binary-vectype).
@@ -42,6 +45,7 @@ pub enum ValueType {
 
 /// [Block type](https://webassembly.github.io/spec/core/binary/instructions.html#control-instructions).
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum BlockType {
     /// Block without a return value.
@@ -97,6 +101,7 @@ impl Decode for BlockType {
 
 /// [Function type](https://webassembly.github.io/spec/core/binary/types.html#function-types).
 #[derive(Wasmbin, WasmbinCountable, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[wasmbin(discriminant = 0x60)]
 pub struct FuncType {
     pub params: Vec<ValueType>,
@@ -124,6 +129,7 @@ impl Debug for FuncType {
 
 /// [Limits](https://webassembly.github.io/spec/core/binary/types.html#limits) type.
 #[derive(PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Limits {
     pub min: u64,
     pub max: Option<u64>,
@@ -290,6 +296,8 @@ encode_decode_as!(Limits, {
 
 #[cfg(feature = "custom-page-sizes")]
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct PageSize(u32);
 
 #[cfg(feature = "custom-page-sizes")]
@@ -337,12 +345,14 @@ impl Decode for PageSize {
 
 /// [Memory type](https://webassembly.github.io/spec/core/binary/types.html#memory-types).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MemType {
     pub limits: Limits,
 }
 
 /// [Reference type](https://webassembly.github.io/spec/core/binary/types.html#reference-types).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum RefType {
     NullableHeapType(HeapType) = 0x63,
@@ -352,6 +362,7 @@ pub enum RefType {
 
 /// [Heap type](https://webassembly.github.io/spec/core/binary/types.html#heap-types).
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum HeapType {
     Abstract(AbstractHeapType),
     TypeIndex(TypeId),
@@ -390,6 +401,7 @@ impl Decode for HeapType {
 
 /// [Abstract heap type](https://webassembly.github.io/spec/core/binary/types.html#binary-absheaptype).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum AbstractHeapType {
     Exception = 0x69,
@@ -408,6 +420,7 @@ pub enum AbstractHeapType {
 
 /// [Table type](https://webassembly.github.io/spec/core/binary/types.html#table-types).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TableType {
     pub elem_type: RefType,
     pub limits: Limits,
@@ -415,6 +428,7 @@ pub struct TableType {
 
 /// [Global type](https://webassembly.github.io/spec/core/binary/types.html#global-types).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GlobalType {
     pub value_type: ValueType,
     pub mutable: bool,
@@ -422,6 +436,7 @@ pub struct GlobalType {
 
 /// [Exception tag type](https://webassembly.github.io/exception-handling/core/binary/types.html#tag-types).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[wasmbin(discriminant = 0x00)]
 pub struct ExceptionType {
     pub func_type: TypeId,
@@ -429,6 +444,7 @@ pub struct ExceptionType {
 
 /// [Recursive type](https://webassembly.github.io/spec/core/binary/types.html#binary-rectype).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum RecursiveType {
     SubTypes(Vec<SubType>) = 0x4E,
@@ -437,6 +453,7 @@ pub enum RecursiveType {
 
 /// Fields of a [sub type](https://webassembly.github.io/spec/core/binary/types.html#binary-subtype).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SubTypeData {
     pub super_types: Vec<TypeId>,
     pub composite_type: CompositeType,
@@ -444,6 +461,7 @@ pub struct SubTypeData {
 
 /// [Sub type](https://webassembly.github.io/spec/core/binary/types.html#binary-subtype).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum SubType {
     FinalSubType(SubTypeData) = 0x4F,
@@ -453,6 +471,7 @@ pub enum SubType {
 
 /// [Composite type](https://webassembly.github.io/spec/core/binary/types.html#binary-comptype).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum CompositeType {
     Array(FieldType) = 0x5E,
@@ -462,6 +481,7 @@ pub enum CompositeType {
 
 /// [Field type](https://webassembly.github.io/spec/core/binary/types.html#binary-fieldtype).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FieldType {
     pub storage_type: StorageType,
     pub mutable: bool,
@@ -469,6 +489,7 @@ pub struct FieldType {
 
 /// [Storage type](https://webassembly.github.io/spec/core/binary/types.html#binary-storagetype).
 #[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum StorageType {
     ValueType(ValueType),

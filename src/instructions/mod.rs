@@ -21,6 +21,8 @@ use crate::io::{
 };
 use crate::types::{BlockType, HeapType, ValueType};
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 const OP_CODE_BLOCK_START: u8 = 0x02;
@@ -118,6 +120,7 @@ impl crate::builtins::WasmbinCountable for Expression {}
 
 /// [Memory immediate argument](https://webassembly.github.io/spec/core/binary/instructions.html#memory-instructions).
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MemArg {
     pub align_log2: u32,
     pub memory: MemId,
@@ -157,6 +160,7 @@ impl Decode for MemArg {
 
 /// An [indirect call](https://webassembly.github.io/spec/core/binary/instructions.html#control-instructions).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CallIndirect {
     pub ty: TypeId,
     pub table: TableId,
@@ -164,12 +168,14 @@ pub struct CallIndirect {
 
 /// Arguments common to [struct instructions](https://webassembly.github.io/spec/core/binary/instructions.html#aggregate-instructions).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StructArg {
     pub struct_type: TypeId,
     pub index: u32,
 }
 
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u32)]
 pub enum RefTypeOp {
     // [Reference instructions](https://webassembly.github.io/spec/core/binary/instructions.html#reference-instructions).
@@ -237,6 +243,7 @@ pub enum RefTypeOp {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CastOp {
     pub from_nullable: bool,
     pub to_nullable: bool,
@@ -260,6 +267,7 @@ encode_decode_as!(CastOp, {
 /// a start (`BlockStart`, `LoopStart` or `IfStart`) instruction followed by the contents of the block,
 /// and an `End` instruction - all in the same flat instruction list.
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u8)]
 pub enum Instruction {
     Unreachable = 0x00,

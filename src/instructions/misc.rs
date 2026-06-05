@@ -15,9 +15,12 @@
 use crate::indices::{DataId, ElemId, MemId, TableId};
 use crate::io::Wasmbin;
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Miscellaneous post-MVP instructions.
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u32)]
 pub enum Misc {
     I32TruncSatF32S = 0x00,

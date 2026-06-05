@@ -15,10 +15,14 @@
 use super::MemArg;
 use crate::io::{Decode, DecodeError, Encode, Wasmbin};
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 /// A SIMD lane index in the `0..MAX` range.
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 #[repr(transparent)]
 pub struct LaneId<const MAX: u8>(u8);
 
@@ -94,6 +98,7 @@ impl<const MAX: u8, const N: usize> Decode for [LaneId<MAX>; N] {
 
 /// [SIMD (vector) instructions](https://webassembly.github.io/spec/core/binary/instructions.html#vector-instructions).
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(u32)]
 pub enum SIMD {
     // Vector loads and stores

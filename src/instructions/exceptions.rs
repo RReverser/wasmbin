@@ -4,6 +4,8 @@ use crate::indices::{ExceptionId, LabelId};
 use crate::io::{Wasmbin, encode_decode_as};
 use crate::types::BlockType;
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[derive(Wasmbin)]
 #[repr(u8)]
@@ -25,6 +27,7 @@ enum CatchRepr {
 }
 
 #[derive(WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Catch {
     /// Whether to store an exception reference on the stack.
     pub catch_ref: bool,
@@ -42,6 +45,7 @@ encode_decode_as!(Catch, {
 });
 
 #[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TryTable {
     pub block_type: BlockType,
     pub catches: Vec<Catch>,

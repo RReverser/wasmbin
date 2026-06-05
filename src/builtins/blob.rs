@@ -15,6 +15,8 @@
 use crate::builtins::{Lazy, UnparsedBytes, WasmbinCountable};
 use crate::io::{Decode, DecodeError, DecodeErrorKind, Encode};
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 impl Encode for [u8] {
     fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
@@ -37,6 +39,8 @@ impl Decode for Vec<u8> {
 
 /// A length-prefixed blob that can be skipped over during decoding.
 #[derive(Default, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Blob<T: Decode> {
     /// Lazily-decoded contents of the blob.
     pub contents: Lazy<T>,

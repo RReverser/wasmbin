@@ -30,6 +30,8 @@ thiserror.workspace = true
 wasmbin-derive = { version = "0.2.4", path = "derive" }
 custom_debug = "0.6.2"
 once_cell = "1.21.3"
+serde = { version = "1.0.228", features = ["derive"], optional = true }
+serde_bytes = { version = "0.11.19", optional = true }
 
 [features]
 default = []
@@ -42,6 +44,7 @@ extended-name-section = []
 threads = []
 custom-page-sizes = []
 nightly = []
+serde = ["dep:serde", "dep:serde_bytes"]
 
 [dev-dependencies]
 criterion = "0.8.2"

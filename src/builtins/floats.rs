@@ -14,12 +14,16 @@
 
 use crate::io::{Decode, DecodeError, Encode, Wasmbin};
 use crate::visit::Visit;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A wrapper around floats that treats `NaN`s as equal.
 ///
 /// This is useful in instruction context, where we don't care
 /// about general floating number rules.
 #[derive(Wasmbin, Debug, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct FloatConst<F> {
     /// The float value.
     pub value: F,
