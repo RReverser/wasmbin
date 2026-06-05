@@ -30,6 +30,7 @@ use std::hash::Hash;
 pub struct UnparsedBytes {
     #[expect(missing_docs)]
     #[debug(with = "custom_debug::hexbuf_str")]
+    #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
     pub bytes: Vec<u8>,
 }
 

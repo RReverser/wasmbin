@@ -428,6 +428,7 @@ pub enum DataInit {
 pub struct Data {
     pub init: DataInit,
     #[debug(with = "custom_debug::hexbuf_str")]
+    #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
     pub blob: Vec<u8>,
 }
 
