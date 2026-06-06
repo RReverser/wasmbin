@@ -1,0 +1,3 @@
+[[package]]
+name = "wasmbin-derive"
+changelog_update = false
