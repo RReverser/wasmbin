@@ -22,15 +22,8 @@ fn heap_type_index_s33() -> Result<()> {
 
 fn roundtrip_legacy_modules(modules: &[&str]) -> Result<()> {
     for module in modules {
-        assert!(
-            module.len() % 2 == 0,
-            "legacy module fixture has odd hex length"
-        );
-        let module = module
-            .as_bytes()
-            .chunks_exact(2)
-            .map(|bytes| u8::from_str_radix(std::str::from_utf8(bytes).unwrap(), 16).unwrap())
-            .collect::<Vec<_>>();
+        let buffer = wast::parser::ParseBuffer::new(module)?;
+        let module = wast::parser::parse::<wast::Wat>(&buffer)?.encode()?;
         let mut encoded = Vec::new();
         read_module(module.as_slice())?.encode_into(&mut encoded)?;
         read_module(&encoded[..])?;
@@ -40,121 +33,801 @@ fn roundtrip_legacy_modules(modules: &[&str]) -> Result<()> {
 #[test]
 fn legacy_throw_ref() -> Result<()> {
     roundtrip_legacy_modules(&[
-        // test.0.wasm: 38 bytes
-        "0061736d01000000010401600000030201000a1201100006400700080009000a0b064018000b",
+        // test.0.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            try
+            catch 0
+              throw 0
+              rethrow 0
+              throw_ref
+            end
+            try
+            delegate 0
+          )
+        )"#,
     ])
 }
 
 #[test]
 fn legacy_throw() -> Result<()> {
     roundtrip_legacy_modules(&[
-        // test.0.wasm: 221 bytes
-        concat!(
-            "0061736d01000000011e0760000060017f0060017d0060017e0060017c0060027f7f0060017f017f0307060602030400",
-            "000d0d06000000010002000300040005075305087468726f772d696600000f7468726f772d706172616d2d6633320001",
-            "0f7468726f772d706172616d2d69363400020f7468726f772d706172616d2d66363400030e746573742d7468726f772d",
-            "312d3200050a46060e002000410047044008000b41000b0600200008020b0600200008030b0600200008040b08004101",
-            "410208050b17000640100407054102470440000b4101470440000b0b0b",
-        ),
-        // test.1.wasm: 26 bytes
-        "0061736d01000000010401600000030201000a0601040008000b",
-        // test.2.wasm: 35 bytes
-        "0061736d0100000001080260017f00600000030201010d030100000a0601040008000b",
-        // test.3.wasm: 37 bytes
-        "0061736d0100000001080260017f00600000030201010d030100000a08010600420508000b",
+        // test.0.wasm
+        r#"(module
+          (type (func))
+          (type (func (param i32)))
+          (type (func (param f32)))
+          (type (func (param i64)))
+          (type (func (param f64)))
+          (type (func (param i32 i32)))
+          (type (func (param i32) (result i32)))
+          (tag (type 0))
+          (tag (type 1) (param i32))
+          (tag (type 2) (param f32))
+          (tag (type 3) (param i64))
+          (tag (type 4) (param f64))
+          (tag (type 5) (param i32 i32))
+          (export "throw-if" (func 0))
+          (export "throw-param-f32" (func 1))
+          (export "throw-param-i64" (func 2))
+          (export "throw-param-f64" (func 3))
+          (export "test-throw-1-2" (func 5))
+          (func (type 6) (param i32) (result i32)
+            local.get 0
+            i32.const 0
+            i32.ne
+            if
+              throw 0
+            end
+            i32.const 0
+          )
+          (func (type 2) (param f32)
+            local.get 0
+            throw 2
+          )
+          (func (type 3) (param i64)
+            local.get 0
+            throw 3
+          )
+          (func (type 4) (param f64)
+            local.get 0
+            throw 4
+          )
+          (func (type 0)
+            i32.const 1
+            i32.const 2
+            throw 5
+          )
+          (func (type 0)
+            try
+              call 4
+            catch 5
+              i32.const 2
+              i32.ne
+              if
+                unreachable
+              end
+              i32.const 1
+              i32.ne
+              if
+                unreachable
+              end
+            end
+          )
+        )"#,
+        // test.1.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            throw 0
+          )
+        )"#,
+        // test.2.wasm
+        r#"(module
+          (type (func (param i32)))
+          (type (func))
+          (tag (type 0) (param i32))
+          (func (type 1)
+            throw 0
+          )
+        )"#,
+        // test.3.wasm
+        r#"(module
+          (type (func (param i32)))
+          (type (func))
+          (tag (type 0) (param i32))
+          (func (type 1)
+            i64.const 5
+            throw 0
+          )
+        )"#,
     ])
 }
 
 #[test]
 fn legacy_rethrow() -> Result<()> {
     roundtrip_legacy_modules(&[
-        // test.0.wasm: 328 bytes
-        concat!(
-            "0061736d0100000001090260000060017f017f030807000100010101000d050200000000078f01070f63617463682d72",
-            "657468726f772d3000000f63617463682d72657468726f772d310001126361746368616c6c2d72657468726f772d3000",
-            "02126361746368616c6c2d72657468726f772d3100030e72657468726f772d6e657374656400040f72657468726f772d",
-            "7265636174636800051a72657468726f772d737461636b2d706f6c796d6f72706869736d00060a8f01070b0006400800",
-            "070009000b0b1300067f08000700200045044009010b41170b0b0a00064008001909000b0b1200067f08001920004504",
-            "4009010b41170b0b2600067f08010701067f080007002000410046044009010b2000410146044009020b41170b0b0b1a",
-            "00067f08000700067f200045044009020b412a070041170b0b0b0d00064008000700410109000b0b",
-        ),
-        // test.1.wasm: 26 bytes
-        "0061736d01000000010401600000030201000a0601040009000b",
-        // test.2.wasm: 29 bytes
-        "0061736d01000000010401600000030201000a09010700024009000b0b",
-        // test.3.wasm: 30 bytes
-        "0061736d01000000010401600000030201000a0a0108000640090018000b",
+        // test.0.wasm
+        r#"(module
+          (type (func))
+          (type (func (param i32) (result i32)))
+          (tag (type 0))
+          (tag (type 0))
+          (export "catch-rethrow-0" (func 0))
+          (export "catch-rethrow-1" (func 1))
+          (export "catchall-rethrow-0" (func 2))
+          (export "catchall-rethrow-1" (func 3))
+          (export "rethrow-nested" (func 4))
+          (export "rethrow-recatch" (func 5))
+          (export "rethrow-stack-polymorphism" (func 6))
+          (func (type 0)
+            try
+              throw 0
+            catch 0
+              rethrow 0
+            end
+          )
+          (func (type 1) (param i32) (result i32)
+            try (result i32)
+              throw 0
+            catch 0
+              local.get 0
+              i32.eqz
+              if
+                rethrow 1
+              end
+              i32.const 23
+            end
+          )
+          (func (type 0)
+            try
+              throw 0
+            catch_all
+              rethrow 0
+            end
+          )
+          (func (type 1) (param i32) (result i32)
+            try (result i32)
+              throw 0
+            catch_all
+              local.get 0
+              i32.eqz
+              if
+                rethrow 1
+              end
+              i32.const 23
+            end
+          )
+          (func (type 1) (param i32) (result i32)
+            try (result i32)
+              throw 1
+            catch 1
+              try (result i32)
+                throw 0
+              catch 0
+                local.get 0
+                i32.const 0
+                i32.eq
+                if
+                  rethrow 1
+                end
+                local.get 0
+                i32.const 1
+                i32.eq
+                if
+                  rethrow 2
+                end
+                i32.const 23
+              end
+            end
+          )
+          (func (type 1) (param i32) (result i32)
+            try (result i32)
+              throw 0
+            catch 0
+              try (result i32)
+                local.get 0
+                i32.eqz
+                if
+                  rethrow 2
+                end
+                i32.const 42
+              catch 0
+                i32.const 23
+              end
+            end
+          )
+          (func (type 0)
+            try
+              throw 0
+            catch 0
+              i32.const 1
+              rethrow 0
+            end
+          )
+        )"#,
+        // test.1.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            rethrow 0
+          )
+        )"#,
+        // test.2.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            block
+              rethrow 0
+            end
+          )
+        )"#,
+        // test.3.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            try
+              rethrow 0
+            delegate 0
+          )
+        )"#,
     ])
 }
 
 #[test]
 fn legacy_try_catch() -> Result<()> {
     roundtrip_legacy_modules(&[
-        // test.0.wasm: 47 bytes
-        "0061736d01000000010401600000030201000d03010000070e020265300400057468726f7700000a0601040008000b",
-        // test.1.wasm: 837 bytes
-        concat!(
-            "0061736d0100000001320b60000060017f0060017d0060017e0060017c0060017f017f60027f7f017f60017d017d6001",
-            "7e017e60017c017c6000017f02190204746573740265300400000474657374057468726f770000031615050005000606",
-            "05050507080901050a050000000000040501700101010d0f07000000000000000100020003000407ec02110b656d7074",
-            "792d636174636800021273696d706c652d7468726f772d6361746368000316756e726561636861626c652d6e6f742d63",
-            "617567687400040e747261702d696e2d63616c6c656500060f63617463682d636f6d706c65782d3100070f6361746368",
-            "2d636f6d706c65782d320008157468726f772d63617463682d706172616d2d6933320009157468726f772d6361746368",
-            "2d706172616d2d663332000a157468726f772d63617463682d706172616d2d693634000b157468726f772d6361746368",
-            "2d706172616d2d663634000c0f63617463682d706172616d2d693332000e0e63617463682d696d706f72746564000f0d",
-            "63617463686c6573732d74727900101872657475726e2d63616c6c2d696e2d7472792d63617463680012217265747572",
-            "6e2d63616c6c2d696e6469726563742d696e2d7472792d636174636800130f627265616b2d7472792d63617463680014",
-            "13627265616b2d7472792d63617463685f616c6c00150907010041000b01110ac302150e002000410047044008010b41",
-            "000b0700064007010b0b1300067f200045044008010b412a070141170b0b0700064000190b0b0700200020016e0b0e00",
-            "067f20002001100519410b0b0b2800067f067f20004504400801052000410146044008020508030b0b4102070141030b",
-            "070241040b0b2500067f20004504400801052000410146044008020508030b0b410207014103070241040b0b0e00067f",
-            "20000804410207040f0b0b1100067d20000805430000000007050f0b0b0e00067e20000806420207060f0b0b1500067c",
-            "2000080744000000000000000007070f0b0b0600200008040b0d00067f41002000100d07040b0b0d00067f4101100007",
-            "0041020b0b1000067f067f200010010b070141010b0b040008010b09000640121107010b0b0c00064041001300000701",
-            "0b0b090006400c0007010b0b080006400c00190b0b",
-        ),
-        // test.2.wasm: 89 bytes
-        concat!(
-            "0061736d010000000108026000006000017f020e010474657374057468726f770000030201010d030100000715011169",
-            "6d706f727465642d6d69736d6174636800010a15011300067f067f41011000070041020b1941030b0b",
-        ),
-        // test.6.wasm: 28 bytes
-        "0061736d010000000105016000017f030201000a07010500067f0b0b",
-        // test.7.wasm: 30 bytes
-        "0061736d010000000105016000017f030201000a09010700067f422a0b0b",
-        // test.8.wasm: 36 bytes
-        "0061736d01000000010401600000030201000d030100000a0b01090006400700412a0b0b",
-        // test.9.wasm: 41 bytes
-        "0061736d0100000001090260017e006000017f030201010d030100000a0b010900067f412a07000b0b",
-        // test.10.wasm: 30 bytes
-        "0061736d01000000010401600000030201000a0a010800064019412a0b0b",
+        // test.0.wasm
+        r#"(module
+          (type (func))
+          (tag (type 0))
+          (export "e0" (tag 0))
+          (export "throw" (func 0))
+          (func (type 0)
+            throw 0
+          )
+        )"#,
+        // test.1.wasm
+        r#"(module
+          (type (func))
+          (type (func (param i32)))
+          (type (func (param f32)))
+          (type (func (param i64)))
+          (type (func (param f64)))
+          (type (func (param i32) (result i32)))
+          (type (func (param i32 i32) (result i32)))
+          (type (func (param f32) (result f32)))
+          (type (func (param i64) (result i64)))
+          (type (func (param f64) (result f64)))
+          (type (func (result i32)))
+          (import "test" "e0" (tag (type 0)))
+          (import "test" "throw" (func (type 0)))
+          (table 1 1 funcref)
+          (tag (type 0))
+          (tag (type 0))
+          (tag (type 0))
+          (tag (type 1) (param i32))
+          (tag (type 2) (param f32))
+          (tag (type 3) (param i64))
+          (tag (type 4) (param f64))
+          (export "empty-catch" (func 2))
+          (export "simple-throw-catch" (func 3))
+          (export "unreachable-not-caught" (func 4))
+          (export "trap-in-callee" (func 6))
+          (export "catch-complex-1" (func 7))
+          (export "catch-complex-2" (func 8))
+          (export "throw-catch-param-i32" (func 9))
+          (export "throw-catch-param-f32" (func 10))
+          (export "throw-catch-param-i64" (func 11))
+          (export "throw-catch-param-f64" (func 12))
+          (export "catch-param-i32" (func 14))
+          (export "catch-imported" (func 15))
+          (export "catchless-try" (func 16))
+          (export "return-call-in-try-catch" (func 18))
+          (export "return-call-indirect-in-try-catch" (func 19))
+          (export "break-try-catch" (func 20))
+          (export "break-try-catch_all" (func 21))
+          (elem (i32.const 0) func 17)
+          (func (type 5) (param i32) (result i32)
+            local.get 0
+            i32.const 0
+            i32.ne
+            if
+              throw 1
+            end
+            i32.const 0
+          )
+          (func (type 0)
+            try
+            catch 1
+            end
+          )
+          (func (type 5) (param i32) (result i32)
+            try (result i32)
+              local.get 0
+              i32.eqz
+              if
+                throw 1
+              end
+              i32.const 42
+            catch 1
+              i32.const 23
+            end
+          )
+          (func (type 0)
+            try
+              unreachable
+            catch_all
+            end
+          )
+          (func (type 6) (param i32 i32) (result i32)
+            local.get 0
+            local.get 1
+            i32.div_u
+          )
+          (func (type 6) (param i32 i32) (result i32)
+            try (result i32)
+              local.get 0
+              local.get 1
+              call 5
+            catch_all
+              i32.const 11
+            end
+          )
+          (func (type 5) (param i32) (result i32)
+            try (result i32)
+              try (result i32)
+                local.get 0
+                i32.eqz
+                if
+                  throw 1
+                else
+                  local.get 0
+                  i32.const 1
+                  i32.eq
+                  if
+                    throw 2
+                  else
+                    throw 3
+                  end
+                end
+                i32.const 2
+              catch 1
+                i32.const 3
+              end
+            catch 2
+              i32.const 4
+            end
+          )
+          (func (type 5) (param i32) (result i32)
+            try (result i32)
+              local.get 0
+              i32.eqz
+              if
+                throw 1
+              else
+                local.get 0
+                i32.const 1
+                i32.eq
+                if
+                  throw 2
+                else
+                  throw 3
+                end
+              end
+              i32.const 2
+            catch 1
+              i32.const 3
+            catch 2
+              i32.const 4
+            end
+          )
+          (func (type 5) (param i32) (result i32)
+            try (result i32)
+              local.get 0
+              throw 4
+              i32.const 2
+            catch 4
+              return
+            end
+          )
+          (func (type 7) (param f32) (result f32)
+            try (result f32)
+              local.get 0
+              throw 5
+              f32.const 0x0p+0
+            catch 5
+              return
+            end
+          )
+          (func (type 8) (param i64) (result i64)
+            try (result i64)
+              local.get 0
+              throw 6
+              i64.const 2
+            catch 6
+              return
+            end
+          )
+          (func (type 9) (param f64) (result f64)
+            try (result f64)
+              local.get 0
+              throw 7
+              f64.const 0x0p+0
+            catch 7
+              return
+            end
+          )
+          (func (type 1) (param i32)
+            local.get 0
+            throw 4
+          )
+          (func (type 5) (param i32) (result i32)
+            try (result i32)
+              i32.const 0
+              local.get 0
+              call 13
+            catch 4
+            end
+          )
+          (func (type 10) (result i32)
+            try (result i32)
+              i32.const 1
+              call 0
+            catch 0
+              i32.const 2
+            end
+          )
+          (func (type 5) (param i32) (result i32)
+            try (result i32)
+              try (result i32)
+                local.get 0
+                call 1
+              end
+            catch 1
+              i32.const 1
+            end
+          )
+          (func (type 0)
+            throw 1
+          )
+          (func (type 0)
+            try
+              return_call 17
+            catch 1
+            end
+          )
+          (func (type 0)
+            try
+              i32.const 0
+              return_call_indirect (type 0)
+            catch 1
+            end
+          )
+          (func (type 0)
+            try
+              br 0
+            catch 1
+            end
+          )
+          (func (type 0)
+            try
+              br 0
+            catch_all
+            end
+          )
+        )"#,
+        // test.2.wasm
+        r#"(module
+          (type (func))
+          (type (func (result i32)))
+          (import "test" "throw" (func (type 0)))
+          (tag (type 0))
+          (export "imported-mismatch" (func 1))
+          (func (type 1) (result i32)
+            try (result i32)
+              try (result i32)
+                i32.const 1
+                call 0
+              catch 0
+                i32.const 2
+              end
+            catch_all
+              i32.const 3
+            end
+          )
+        )"#,
+        // test.6.wasm
+        r#"(module
+          (type (func (result i32)))
+          (func (type 0) (result i32)
+            try (result i32)
+            end
+          )
+        )"#,
+        // test.7.wasm
+        r#"(module
+          (type (func (result i32)))
+          (func (type 0) (result i32)
+            try (result i32)
+              i64.const 42
+            end
+          )
+        )"#,
+        // test.8.wasm
+        r#"(module
+          (type (func))
+          (tag (type 0))
+          (func (type 0)
+            try
+            catch 0
+              i32.const 42
+            end
+          )
+        )"#,
+        // test.9.wasm
+        r#"(module
+          (type (func (param i64)))
+          (type (func (result i32)))
+          (tag (type 0) (param i64))
+          (func (type 1) (result i32)
+            try (result i32)
+              i32.const 42
+            catch 0
+            end
+          )
+        )"#,
+        // test.10.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            try
+            catch_all
+              i32.const 42
+            end
+          )
+        )"#,
     ])
 }
 
 #[test]
 fn legacy_try_delegate() -> Result<()> {
     roundtrip_legacy_modules(&[
-        // test.0.wasm: 786 bytes
-        concat!(
-            "0061736d010000000117056000006000017f60017f0060017f017f60027f7f017f031312010203010101000002040101",
-            "000000000101040501700101010d05020000000007e2020f1164656c65676174652d6e6f2d7468726f7700000e64656c",
-            "65676174652d7468726f7700020d64656c65676174652d736b697000031164656c65676174652d746f2d626c6f636b00",
-            "041164656c65676174652d746f2d636174636800051a64656c65676174652d746f2d63616c6c65722d7472697669616c",
-            "00061b64656c65676174652d746f2d63616c6c65722d736b697070696e6700070e64656c65676174652d6d6572676500",
-            "091764656c65676174652d7468726f772d6e6f2d6361746368000a1864656c65676174652d636f72726563742d746172",
-            "67657473000b1b72657475726e2d63616c6c2d696e2d7472792d64656c6567617465000d2472657475726e2d63616c6c",
-            "2d696e6469726563742d696e2d7472792d64656c6567617465000e12627265616b2d7472792d64656c6567617465000f",
-            "14627265616b2d616e642d63616c6c2d7468726f7700100f627265616b2d616e642d7468726f7700110907010041000b",
-            "010c0add02120f00067f067f41011800070041020b0b09002000044008000b0b1300067f067f20001001410118000700",
-            "41020b0b1800067f067f067f080041011801070041020b070041030b0b1300067f02400640080018000b41001941010b",
-            "0b1700067f0640080007000640090118000b41001941010b0b08000640080018000b0c000640064008001801190b0b17",
-            "0002400240024020000e020001020b0f0b08000b08010b1700067f20001008067f2001100841011800070041020b0b11",
-            "00067f067f080041011800070141020b0b2700067f064006400640064006400800180119000b180119000b1906400800",
-            "18000b001941010b0b040008000b0d0006400640120c180007000b0b1000064006404100130000180007000b0b080006",
-            "400c0018000b1d00067f067f024006400c0118020b100c4100070041010b070041020b0b1d00067f067f024006400c01",
-            "18020b08004100070041010b070041020b0b",
-        ),
-        // test.5.wasm: 28 bytes
-        "0061736d01000000010401600000030201000a08010600064018010b",
+        // test.0.wasm
+        r#"(module
+          (type (func))
+          (type (func (result i32)))
+          (type (func (param i32)))
+          (type (func (param i32) (result i32)))
+          (type (func (param i32 i32) (result i32)))
+          (table 1 1 funcref)
+          (tag (type 0))
+          (tag (type 0))
+          (export "delegate-no-throw" (func 0))
+          (export "delegate-throw" (func 2))
+          (export "delegate-skip" (func 3))
+          (export "delegate-to-block" (func 4))
+          (export "delegate-to-catch" (func 5))
+          (export "delegate-to-caller-trivial" (func 6))
+          (export "delegate-to-caller-skipping" (func 7))
+          (export "delegate-merge" (func 9))
+          (export "delegate-throw-no-catch" (func 10))
+          (export "delegate-correct-targets" (func 11))
+          (export "return-call-in-try-delegate" (func 13))
+          (export "return-call-indirect-in-try-delegate" (func 14))
+          (export "break-try-delegate" (func 15))
+          (export "break-and-call-throw" (func 16))
+          (export "break-and-throw" (func 17))
+          (elem (i32.const 0) func 12)
+          (func (type 1) (result i32)
+            try (result i32)
+              try (result i32)
+                i32.const 1
+              delegate 0
+            catch 0
+              i32.const 2
+            end
+          )
+          (func (type 2) (param i32)
+            local.get 0
+            if
+              throw 0
+            end
+          )
+          (func (type 3) (param i32) (result i32)
+            try (result i32)
+              try (result i32)
+                local.get 0
+                call 1
+                i32.const 1
+              delegate 0
+            catch 0
+              i32.const 2
+            end
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              try (result i32)
+                try (result i32)
+                  throw 0
+                  i32.const 1
+                delegate 1
+              catch 0
+                i32.const 2
+              end
+            catch 0
+              i32.const 3
+            end
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              block
+                try
+                  throw 0
+                delegate 0
+              end
+              i32.const 0
+            catch_all
+              i32.const 1
+            end
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              try
+                throw 0
+              catch 0
+                try
+                  rethrow 1
+                delegate 0
+              end
+              i32.const 0
+            catch_all
+              i32.const 1
+            end
+          )
+          (func (type 0)
+            try
+              throw 0
+            delegate 0
+          )
+          (func (type 0)
+            try
+              try
+                throw 0
+              delegate 1
+            catch_all
+            end
+          )
+          (func (type 2) (param i32)
+            block
+              block
+                block
+                  local.get 0
+                  br_table 0 1 2
+                end
+                return
+              end
+              throw 0
+            end
+            throw 1
+          )
+          (func (type 4) (param i32 i32) (result i32)
+            try (result i32)
+              local.get 0
+              call 8
+              try (result i32)
+                local.get 1
+                call 8
+                i32.const 1
+              delegate 0
+            catch 0
+              i32.const 2
+            end
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              try (result i32)
+                throw 0
+                i32.const 1
+              delegate 0
+            catch 1
+              i32.const 2
+            end
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              try
+                try
+                  try
+                    try
+                      try
+                        throw 0
+                      delegate 1
+                    catch_all
+                      unreachable
+                    end
+                  delegate 1
+                catch_all
+                  unreachable
+                end
+              catch_all
+                try
+                  throw 0
+                delegate 0
+              end
+              unreachable
+            catch_all
+              i32.const 1
+            end
+          )
+          (func (type 0)
+            throw 0
+          )
+          (func (type 0)
+            try
+              try
+                return_call 12
+              delegate 0
+            catch 0
+            end
+          )
+          (func (type 0)
+            try
+              try
+                i32.const 0
+                return_call_indirect (type 0)
+              delegate 0
+            catch 0
+            end
+          )
+          (func (type 0)
+            try
+              br 0
+            delegate 0
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              try (result i32)
+                block
+                  try
+                    br 1
+                  delegate 2
+                end
+                call 12
+                i32.const 0
+              catch 0
+                i32.const 1
+              end
+            catch 0
+              i32.const 2
+            end
+          )
+          (func (type 1) (result i32)
+            try (result i32)
+              try (result i32)
+                block
+                  try
+                    br 1
+                  delegate 2
+                end
+                throw 0
+                i32.const 0
+              catch 0
+                i32.const 1
+              end
+            catch 0
+              i32.const 2
+            end
+          )
+        )"#,
+        // test.5.wasm
+        r#"(module
+          (type (func))
+          (func (type 0)
+            try
+            delegate 1
+          )
+        )"#,
     ])
 }
