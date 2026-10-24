@@ -15,7 +15,9 @@
 // limitations under the License.
 
 use crate::builtins::FloatConst;
-use crate::indices::{DataId, ElemId, FuncId, GlobalId, LabelId, LocalId, MemId, TableId, TypeId};
+use crate::indices::{
+    DataId, ElemId, ExceptionId, FuncId, GlobalId, LabelId, LocalId, MemId, TableId, TypeId,
+};
 use crate::io::{
     Decode, DecodeError, DecodeWithDiscriminant, Encode, PathItem, Wasmbin, encode_decode_as,
 };
@@ -28,6 +30,10 @@ use thiserror::Error;
 const OP_CODE_BLOCK_START: u8 = 0x02;
 const OP_CODE_LOOP_START: u8 = 0x03;
 const OP_CODE_IF_START: u8 = 0x04;
+const OP_CODE_TRY_START: u8 = 0x06;
+const OP_CODE_CATCH: u8 = 0x07;
+const OP_CODE_DELEGATE: u8 = 0x18;
+const OP_CODE_CATCH_ALL: u8 = 0x19;
 const OP_CODE_END: u8 = 0x0B;
 
 #[derive(Debug, Error)]
@@ -62,6 +68,10 @@ impl DepthTracker {
             _ => Err(DepthError),
         }
     }
+
+    fn is_empty(&self) -> bool {
+        self.depth == 0
+    }
 }
 
 impl Encode for [Instruction] {
@@ -69,12 +79,13 @@ impl Encode for [Instruction] {
         let mut depth_tracker = DepthTracker::default();
         for instr in self {
             match instr {
-                Instruction::BlockStart(_)
+                Instruction::TryStart(_)
+                | Instruction::BlockStart(_)
                 | Instruction::LoopStart(_)
                 | Instruction::IfStart(_) => {
                     depth_tracker.inc();
                 }
-                Instruction::End => {
+                Instruction::Delegate(_) | Instruction::End => {
                     depth_tracker.try_dec()?;
                 }
                 _ => {}
@@ -93,8 +104,18 @@ impl Decode for Vec<Instruction> {
         loop {
             let op_code = u8::decode(r)?;
             match op_code {
-                OP_CODE_BLOCK_START | OP_CODE_LOOP_START | OP_CODE_IF_START => {
+                OP_CODE_BLOCK_START | OP_CODE_LOOP_START | OP_CODE_IF_START | OP_CODE_TRY_START => {
                     depth_tracker.inc();
+                }
+                OP_CODE_DELEGATE => {
+                    depth_tracker.try_dec().map_err(std::io::Error::from)?;
+                }
+                OP_CODE_CATCH | OP_CODE_CATCH_ALL if depth_tracker.is_empty() => {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "exception handler outside try block",
+                    )
+                    .into());
                 }
                 OP_CODE_END => {
                     if depth_tracker.try_dec().is_err() {
@@ -115,7 +136,6 @@ impl Decode for Vec<Instruction> {
 
 /// [Expression](https://webassembly.github.io/spec/core/binary/instructions.html#expressions), aka a terminated list of [instructions](Instruction).
 pub type Expression = Vec<Instruction>;
-
 impl crate::builtins::WasmbinCountable for Expression {}
 
 /// [Memory immediate argument](https://webassembly.github.io/spec/core/binary/instructions.html#memory-instructions).
@@ -276,8 +296,13 @@ pub enum Instruction {
     LoopStart(BlockType) = OP_CODE_LOOP_START,
     IfStart(BlockType) = OP_CODE_IF_START,
     IfElse = 0x05,
-    Throw(crate::indices::ExceptionId) = 0x08,
+    TryStart(BlockType) = OP_CODE_TRY_START,
+    Catch(ExceptionId) = OP_CODE_CATCH,
+    Throw(ExceptionId) = 0x08,
+    Rethrow(LabelId) = 0x09,
     ThrowRef = 0x0A,
+    Delegate(LabelId) = OP_CODE_DELEGATE,
+    CatchAll = OP_CODE_CATCH_ALL,
     End = OP_CODE_END,
     Br(LabelId) = 0x0C,
     BrIf(LabelId) = 0x0D,
