@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0](https://github.com/RReverser/wasmbin/compare/wasmbin-v0.9.2...wasmbin-v0.10.0) - 2026-10-24
+
+### Other
+
+- Support for legacy exception handling ([#14](https://github.com/RReverser/wasmbin/pull/14))
+
 ## [0.9.2](https://github.com/RReverser/wasmbin/compare/wasmbin-v0.9.1...wasmbin-v0.9.2) - 2026-06-06
 
 ### Other
