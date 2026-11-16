@@ -39,10 +39,12 @@ proposals = [
     "extended-name-section",
     "threads",
     "custom-page-sizes",
+    "wide-arithmetic",
 ]
 extended-name-section = []
 threads = []
 custom-page-sizes = []
+wide-arithmetic = []
 nightly = []
 serde = ["dep:serde", "dep:serde_bytes"]
 

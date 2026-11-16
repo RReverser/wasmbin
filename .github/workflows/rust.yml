@@ -29,6 +29,8 @@ jobs:
       run: cargo +stable test -- -q
     - name: Run tests with features enabled
       run: cargo +stable test --features=proposals,serde -- -q
+    - name: Run tests with only wide arithmetic enabled
+      run: cargo +stable test --no-default-features --features=wide-arithmetic -- -q
     - name: Run `clippy check`
       uses: giraffate/clippy-action@v1
       with:
