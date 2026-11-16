@@ -49,7 +49,7 @@ serde = ["dep:serde", "dep:serde_bytes"]
 [dev-dependencies]
 criterion = "0.8.2"
 libtest-mimic = "0.8.1"
-wast = "244.0.0"
+wast = "263.0.0"
 anyhow = { version = "1.0.98", features = ["backtrace"] }
 tempfile = "3.19.1"
 indexmap = { version = "2.9.0", features = ["rayon"] }
