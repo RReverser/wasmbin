@@ -125,6 +125,72 @@ pub struct ProducerVersionedName {
     pub version: String,
 }
 
+/// The expected condition value for a hinted `if` or `br_if` instruction.
+#[derive(Wasmbin, Debug, PartialEq, Eq, Hash, Clone, Copy, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[repr(u32)]
+pub enum BranchHintValue {
+    /// The condition is likely false.
+    LikelyFalse = 0,
+    /// The condition is likely true.
+    LikelyTrue = 1,
+}
+
+/// A [branch hint](https://github.com/WebAssembly/branch-hinting/blob/master/proposals/branch-hinting/Overview.md)
+/// for a single instruction.
+#[derive(WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Copy, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct BranchHint {
+    /// Byte offset of an `if` or `br_if` instruction, relative to the beginning
+    /// of the function's locals declaration (excluding the body size prefix).
+    ///
+    /// Callers must update offsets when editing or re-encoding function bodies:
+    /// even unchanged instructions can change size when padded LEB128 encodings
+    /// are canonicalized.
+    pub offset: u32,
+    /// The expected value of the instruction's condition.
+    pub value: BranchHintValue,
+}
+
+impl Encode for BranchHint {
+    fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+        self.offset.encode(w)?;
+        1_u32.encode(w)?;
+        self.value.encode(w)
+    }
+}
+
+impl Decode for BranchHint {
+    fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
+        let offset = u32::decode(r).map_err(|err| err.in_path(PathItem::Name("offset")))?;
+        // The proposal specifies a u32 constant, not a byte or a blob length.
+        let size = u32::decode(r).map_err(|err| err.in_path(PathItem::Name("size")))?;
+        if size != 1 {
+            return Err(
+                DecodeError::unsupported_discriminant::<Self>(size).in_path(PathItem::Name("size"))
+            );
+        }
+        let value =
+            BranchHintValue::decode(r).map_err(|err| err.in_path(PathItem::Name("value")))?;
+        Ok(Self { offset, value })
+    }
+}
+
+/// Branch hints for one function in [`CustomSection::BranchHints`].
+///
+/// The section should occur once, before the code section, with unique,
+/// increasing function indices referring to defined functions.
+/// Hints must have unique, increasing offsets targeting `if` or `br_if`
+/// instructions. These semantic constraints are not checked by the codec.
+#[derive(Wasmbin, WasmbinCountable, Debug, PartialEq, Eq, Hash, Clone, Visit)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FunctionBranchHints {
+    /// Index in the module's function index space, which includes imported functions.
+    pub func: FuncId,
+    /// Hints in increasing byte offset order.
+    pub hints: Vec<BranchHint>,
+}
+
 /// A raw [custom section](https://webassembly.github.io/spec/core/binary/modules.html#custom-section).
 ///
 /// Used to represent custom sections with unknown semantics.
@@ -232,6 +298,8 @@ define_custom_sections! {
     SourceMappingUrl(Lazy<String>) = "sourceMappingURL",
     /// https://github.com/WebAssembly/tool-conventions/blob/9b80cd2339c648822bb845a083d9ffa6e20fb1ee/BuildId.md
     BuildId(Vec<u8>) = "build_id",
+    /// https://github.com/WebAssembly/branch-hinting/blob/master/proposals/branch-hinting/Overview.md
+    BranchHints(Lazy<Vec<FunctionBranchHints>>) = "metadata.code.branch_hint",
 }
 
 /// [Import descriptor](https://webassembly.github.io/spec/core/binary/modules.html#binary-importdesc).
