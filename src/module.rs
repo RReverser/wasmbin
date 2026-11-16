@@ -28,7 +28,7 @@ const MAGIC_AND_VERSION: [u8; 8] = [b'\0', b'a', b's', b'm', 0x01, 0x00, 0x00, 0
 struct MagicAndVersion;
 
 encode_decode_as!(MagicAndVersion, {
-    MagicAndVersion <=> MAGIC_AND_VERSION,
+    (MagicAndVersion) <=> (MAGIC_AND_VERSION),
 }, |actual| {
     Err(DecodeErrorKind::InvalidMagic { actual }.into())
 });
@@ -75,6 +75,11 @@ impl Decode for Module {
 impl Module {
     /// Decode a module from an arbitrary input.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if reading fails, the module header is invalid, or a section cannot
+    /// be decoded. Lazily stored contents are validated when accessed.
+    ///
     /// ## Example
     ///
     /// ```no_run
@@ -96,6 +101,10 @@ impl Module {
 
     /// Encode the module into an arbitrary output.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if writing fails or a value cannot be represented in the binary format.
+    ///
     /// ## Example
     ///
     /// ```no_run
@@ -110,6 +119,7 @@ impl Module {
     /// module.encode_into(writer)?;
     /// # Ok(())
     /// # }
+    /// ```
     pub fn encode_into<W: std::io::Write>(&self, mut w: W) -> std::io::Result<W> {
         self.encode(&mut w)?;
         Ok(w)

@@ -96,10 +96,10 @@ impl Tests {
                     ..
                 } => (module, Err(message.to_owned())),
                 // Expect successful parsing for regular AST modules.
-                wast::WastDirective::Module(module) => (module, Ok(())),
+                wast::WastDirective::Module(module)
                 // Counter-intuitively, expect successful parsing for modules that are supposed
                 // to error out at runtime or linking stage, too.
-                wast::WastDirective::AssertInvalid { module, .. } => (module, Ok(())),
+                | wast::WastDirective::AssertInvalid { module, .. } => (module, Ok(())),
                 wast::WastDirective::AssertUnlinkable { module, .. } => (QuoteWat::Wat(module), Ok(())),
                 _ => {
                     // Skipping interpreted
@@ -124,7 +124,7 @@ impl Tests {
 
                     Trial::test(
                         format!("{}:{}:{}", path.display(), line + 1, col + 1),
-                        move || run_test(&raw_module, expect_result).map_err(Failed::from),
+                        move || run_test(&raw_module, &expect_result).map_err(Failed::from),
                     )
                     .with_ignored_flag(is_ignored)
                 });
@@ -138,7 +138,7 @@ impl Tests {
         let mut add_test_files_in_dir = |path: &Path| -> Result<()> {
             for file in read_dir(path)? {
                 let path = file?.path();
-                if path.extension().map_or(false, |ext| ext == "wast") {
+                if path.extension().is_some_and(|ext| ext == "wast") {
                     test_files.push(path);
                 }
             }
@@ -197,11 +197,11 @@ fn unlazify<T: Visit>(mut wasm: T) -> Result<T, DecodeError> {
     }
 }
 
-fn run_test(mut test_module: &[u8], expect_result: Result<(), String>) -> Result<()> {
+fn run_test(mut test_module: &[u8], expect_result: &Result<(), String>) -> Result<()> {
     let orig_test_module = test_module;
     let module = match (
         Module::decode_from(&mut test_module).and_then(unlazify),
-        &expect_result,
+        expect_result,
     ) {
         (Ok(ref module), Err(err)) => bail!(
             "Expected an invalid module definition with an error: {err}\nParsed part: {parsed_part:02X?}\nGot module: {module:#?}",

@@ -75,13 +75,13 @@ fn main() -> anyhow::Result<()> {
         )
     })?;
     let filter: Box<dyn Fn(&Section) -> bool> = match opts.section {
-        DumpSection::All => Box::new(|_s: &Section| true) as _,
+        DumpSection::All => Box::new(|_s: &Section| true),
         DumpSection::Custom { name } => Box::new(move |s: &Section| {
             let other_name = match s {
                 Section::Custom(s) => match s.try_contents() {
                     Ok(section) => Some(section.name()),
                     Err(err) => {
-                        eprintln!("Warning: could not parse a custom section. {}", err);
+                        eprintln!("Warning: could not parse a custom section. {err}");
                         None
                     }
                 },
@@ -107,8 +107,8 @@ fn main() -> anyhow::Result<()> {
     for s in m.sections.iter_mut().filter(|s| filter(s)) {
         count += 1;
         unlazify_with_opt(s, opts.include_raw)?;
-        println!("{:#?}", s);
+        println!("{s:#?}");
     }
-    println!("Found {} sections.", count);
+    println!("Found {count} sections.");
     Ok(())
 }

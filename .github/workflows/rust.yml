@@ -12,13 +12,11 @@ jobs:
 
     steps:
     - name: Check out the repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: true
     - name: Install stable toolchain
       uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy
     - name: Install nightly toolchain
       uses: dtolnay/rust-toolchain@nightly
       with:
@@ -31,9 +29,46 @@ jobs:
       run: cargo +stable test --features=proposals,serde -- -q
     - name: Run tests with only wide arithmetic enabled
       run: cargo +stable test --no-default-features --features=wide-arithmetic -- -q
-    - name: Run `clippy check`
-      uses: giraffate/clippy-action@v1
+  clippy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - toolchain: stable
+          args: --no-default-features
+        - toolchain: stable
+          args: --features=proposals,serde
+        - toolchain: stable
+          args: --no-default-features --features=wide-arithmetic
+        - toolchain: stable
+          args: --no-default-features --features=threads
+        - toolchain: stable
+          args: --no-default-features --features=custom-page-sizes
+        - toolchain: nightly
+          args: --all-features
+
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        reporter: github-pr-check
-        clippy_flags: --workspace --features=proposals,serde --all-targets -q -- -D warnings
+        submodules: true
+    - name: Install toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.toolchain }}
+        components: clippy
+    - name: Check all targets with strict Clippy lints
+      run: cargo clippy --workspace --all-targets ${{ matrix.args }} -- -D warnings
+
+  clippy-fuzz:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v4
+    - name: Install stable toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - name: Check fuzz targets with strict Clippy lints
+      run: cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings

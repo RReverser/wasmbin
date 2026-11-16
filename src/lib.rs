@@ -13,21 +13,6 @@
 // limitations under the License.
 
 #![cfg_attr(feature = "nightly", feature(doc_cfg))]
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    unused_qualifications,
-    unused_macros,
-    unused_lifetimes,
-    single_use_lifetimes,
-    clippy::partial_pub_fields
-)]
-#![allow(
-    clippy::missing_errors_doc,
-    clippy::match_bool,
-    clippy::must_use_candidate,
-    clippy::module_name_repetitions
-)]
 #![doc = include_str!("../README.md")]
 
 pub mod builtins;

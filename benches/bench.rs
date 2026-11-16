@@ -36,7 +36,7 @@ fn deep_module() -> Module {
     Module {
         sections: vec![
             vec![Blob::from(FuncBody {
-                locals: Default::default(),
+                locals: Vec::new(),
                 expr,
             })]
             .into(),
@@ -59,7 +59,7 @@ fn bench_parse(c: &mut Criterion) {
         b.iter(|| {
             let f = File::open("benches/fixture.wasm").unwrap();
             unlazify(Module::decode_from(f).unwrap())
-        })
+        });
     });
 }
 
@@ -69,7 +69,7 @@ fn bench_parse_buf(c: &mut Criterion) {
             let f = File::open("benches/fixture.wasm").unwrap();
             let f = std::io::BufReader::new(f);
             unlazify(Module::decode_from(f).unwrap())
-        })
+        });
     });
 }
 
@@ -79,7 +79,7 @@ fn bench_parse_vec(c: &mut Criterion) {
         b.iter(|| {
             let f = black_box(f.as_slice());
             unlazify(Module::decode_from(f).unwrap())
-        })
+        });
     });
 }
 
@@ -91,7 +91,7 @@ fn bench_parse_deep_module(c: &mut Criterion) {
             b.iter(|| {
                 let f = black_box(f.as_slice());
                 unlazify(Module::decode_from(f).unwrap())
-            })
+            });
         },
     );
 }
@@ -107,7 +107,7 @@ fn bench_write(c: &mut Criterion) {
         b.iter(|| {
             let f = tempfile().unwrap();
             black_box(&m).encode_into(f).unwrap()
-        })
+        });
     });
 }
 
@@ -118,14 +118,14 @@ fn bench_write_buf(c: &mut Criterion) {
             let f = tempfile().unwrap();
             let f = std::io::BufWriter::new(f);
             black_box(&m).encode_into(f).unwrap()
-        })
+        });
     });
 }
 
 fn bench_write_vec(c: &mut Criterion) {
     c.bench_function(concat!(stringify!($name), "::bench_write_vec"), |b| {
         let m = read_module();
-        b.iter(|| black_box(&m).encode_into(Vec::new()).unwrap())
+        b.iter(|| black_box(&m).encode_into(Vec::new()).unwrap());
     });
 }
 
@@ -134,7 +134,7 @@ fn bench_write_deep_module(c: &mut Criterion) {
         concat!(stringify!($name), "::bench_write_deep_module"),
         |b| {
             let m = deep_module();
-            b.iter(|| black_box(&m).encode_into(Vec::new()).unwrap())
+            b.iter(|| black_box(&m).encode_into(Vec::new()).unwrap());
         },
     );
 }

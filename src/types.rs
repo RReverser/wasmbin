@@ -309,6 +309,7 @@ impl PageSize {
     pub const DEFAULT: Self = Self::new(16).unwrap();
 
     /// Returns a custom page size that is valid according to the spec
+    #[must_use]
     pub const fn new(size_log2: u32) -> Option<Self> {
         if size_log2 <= 64 {
             Some(Self(size_log2))
@@ -317,11 +318,13 @@ impl PageSize {
         }
     }
 
+    #[must_use]
     pub const fn size_log2(&self) -> u32 {
         self.0
     }
 
     /// Returns human-readable page size as bytes
+    #[must_use]
     pub const fn size(&self) -> u64 {
         u64::pow(2, self.0)
     }

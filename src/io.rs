@@ -133,33 +133,39 @@ impl From<std::convert::Infallible> for DecodeErrorKind {
 /// A trait for types that can be encoded into a binary stream.
 pub trait Encode {
     /// Encodes the value into the given writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing fails or a value cannot be represented in the binary format.
     fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()>;
 }
 
 /// A trait for types that can be decoded from a binary stream.
 pub trait Decode: Sized {
     /// Decodes the value from the given reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading fails or the input is not a valid encoding of this type.
     fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError>;
 }
 
 macro_rules! encode_decode_as {
     ($ty:ty, {
-        $($lhs:tt <=> $rhs:tt,)*
+        $(($($lhs:tt)+) <=> ($($rhs:tt)+),)*
     } $(, |$other:pat_param| $other_handler:expr)?) => {
         impl $crate::io::Encode for $ty {
-            #[allow(unused_parens)]
             fn encode(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
                 match *self {
-                    $($lhs => $rhs,)*
+                    $($($lhs)+ => $($rhs)+,)*
                 }.encode(w)
             }
         }
 
         impl $crate::io::Decode for $ty {
-            #[allow(unused_parens)]
             fn decode(r: &mut impl std::io::Read) -> Result<Self, $crate::io::DecodeError> {
                 Ok(match $crate::io::Decode::decode(r)? {
-                    $($rhs => $lhs,)*
+                    $($($rhs)+ => $($lhs)+,)*
                     $($other => return $other_handler)?
                 })
             }
@@ -179,6 +185,10 @@ pub trait DecodeWithDiscriminant: Decode {
     ///
     /// This allows to try decoding multiple types with the same discriminant
     /// without advancing the reader position.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the discriminant matches but reading or decoding the value fails.
     fn maybe_decode_with_discriminant(
         discriminant: Self::Discriminant,
         r: &mut impl std::io::Read,
@@ -186,7 +196,9 @@ pub trait DecodeWithDiscriminant: Decode {
 
     /// Decodes the value from the given reader, if the discriminant matches.
     ///
-    /// Returns an error if the discriminant does not match.
+    /// # Errors
+    ///
+    /// Returns an error if the discriminant does not match, or reading or decoding the value fails.
     fn decode_with_discriminant(
         discriminant: Self::Discriminant,
         r: &mut impl std::io::Read,
@@ -198,6 +210,10 @@ pub trait DecodeWithDiscriminant: Decode {
     /// Decodes this value fully, including the discriminant.
     ///
     /// This method is intended to be used as an implementation for [`Decode::decode`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading or decoding the discriminant or value fails.
     fn decode_without_discriminant(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
         Self::decode_with_discriminant(Self::Discriminant::decode(r)?, r)
     }

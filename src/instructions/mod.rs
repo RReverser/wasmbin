@@ -117,10 +117,8 @@ impl Decode for Vec<Instruction> {
                     )
                     .into());
                 }
-                OP_CODE_END => {
-                    if depth_tracker.try_dec().is_err() {
-                        break;
-                    }
+                OP_CODE_END if depth_tracker.try_dec().is_err() => {
+                    break;
                 }
                 _ => {}
             }
@@ -270,10 +268,10 @@ pub struct CastOp {
 }
 
 encode_decode_as!(CastOp, {
-    (CastOp { from_nullable: false, to_nullable: false }) <=> 0x00,
-    (CastOp { from_nullable: true, to_nullable: false }) <=> 0x01,
-    (CastOp { from_nullable: false, to_nullable: true }) <=> 0x02,
-    (CastOp { from_nullable: true, to_nullable: true }) <=> 0x03,
+    (CastOp { from_nullable: false, to_nullable: false }) <=> (0x00),
+    (CastOp { from_nullable: true, to_nullable: false }) <=> (0x01),
+    (CastOp { from_nullable: false, to_nullable: true }) <=> (0x02),
+    (CastOp { from_nullable: true, to_nullable: true }) <=> (0x03),
 }, |discriminant| {
     Err(DecodeError::unsupported_discriminant::<CastOp>(discriminant))
 });
