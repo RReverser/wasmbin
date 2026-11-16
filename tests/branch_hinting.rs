@@ -102,7 +102,7 @@ fn exact_encodings_and_boundaries() {
             Vec::<FunctionBranchHints>::decode(&mut input).unwrap(),
             expected
         );
-        assert!(input.is_empty());
+        assert_eq!(input, []);
         let custom = CustomSection::BranchHints(expected.into());
         assert_eq!(custom.name(), NAME);
         let mut expected_bytes = vec![25];

@@ -105,6 +105,7 @@ pub struct Lazy<T> {
 
 impl<T> Lazy<T> {
     /// Create a new undecoded `Lazy` from a raw byte vector.
+    #[must_use]
     pub fn from_raw(raw: UnparsedBytes) -> Self {
         Lazy {
             status: LazyStatus::FromInput {
@@ -115,6 +116,10 @@ impl<T> Lazy<T> {
     }
 
     /// Retrieve the raw bytes if the value has not been modified yet.
+    ///
+    /// # Errors
+    ///
+    /// Returns a reference to the inner value if it was created from a value or accessed mutably.
     pub fn try_as_raw(&self) -> Result<&UnparsedBytes, &T> {
         match &self.status {
             LazyStatus::FromInput { raw, .. } => Ok(raw),
@@ -169,6 +174,10 @@ fn decode_raw<T: Decode>(raw: &UnparsedBytes) -> Result<T, DecodeError> {
 
 impl<T: Decode> Lazy<T> {
     /// Retrieve a reference to the inner value, decoding it if it wasn't already.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the stored bytes cannot be decoded or contain trailing data.
     pub fn try_contents(&self) -> Result<&T, DecodeError> {
         match &self.status {
             LazyStatus::FromInput { raw, parsed } => parsed.get_or_try_init(|| decode_raw(raw)),
@@ -179,6 +188,10 @@ impl<T: Decode> Lazy<T> {
     /// Retrieve a mutable reference to the inner value, decoding it if it wasn't already.
     ///
     /// This will invalidate the original raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the stored bytes cannot be decoded or contain trailing data.
     pub fn try_contents_mut(&mut self) -> Result<&mut T, DecodeError> {
         if let LazyStatus::FromInput { raw, parsed } = &mut self.status {
             // We can't trust input and output to match once we obtained a mutable reference,
@@ -198,6 +211,10 @@ impl<T: Decode> Lazy<T> {
     }
 
     /// Unwrap the inner value, decoding it if it wasn't already.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the stored bytes cannot be decoded or contain trailing data.
     pub fn try_into_contents(self) -> Result<T, DecodeError> {
         match self.status {
             LazyStatus::FromInput { raw, parsed } => match parsed.into_inner() {

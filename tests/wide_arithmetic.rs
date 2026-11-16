@@ -91,7 +91,7 @@ fn exact_encodings_and_padded_decoding() {
             let mut input = bytes.as_slice();
             let decoded = Misc::decode(&mut input).unwrap();
             assert_eq!(decoded, misc);
-            assert!(input.is_empty());
+            assert_eq!(input, []);
             encoded.clear();
             decoded.encode(&mut encoded).unwrap();
             assert_eq!(encoded, [opcode]);
@@ -105,7 +105,7 @@ fn exact_encodings_and_padded_decoding() {
             decoded.encode(&mut encoded).unwrap();
             assert_eq!(encoded, [0xFC, opcode]);
             assert_eq!(Instruction::decode(&mut input).unwrap(), Instruction::Nop);
-            assert!(input.is_empty());
+            assert_eq!(input, []);
         }
     }
 }
@@ -136,7 +136,7 @@ fn encode_wat(source: &str) -> Vec<u8> {
 }
 
 #[cfg(feature = "wide-arithmetic")]
-const MODULE: &str = r#"(module
+const MODULE: &str = r"(module
     (func (param i64 i64 i64 i64) (result i64 i64)
         local.get 0 local.get 1 local.get 2 local.get 3 i64.add128)
     (func (param i64 i64 i64 i64) (result i64 i64)
@@ -145,7 +145,7 @@ const MODULE: &str = r#"(module
         local.get 0 local.get 1 i64.mul_wide_s)
     (func (param i64 i64) (result i64 i64)
         local.get 0 local.get 1 i64.mul_wide_u)
-)"#;
+)";
 
 #[cfg(feature = "wide-arithmetic")]
 #[test]

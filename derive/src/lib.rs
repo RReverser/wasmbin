@@ -96,7 +96,7 @@ fn track_err_in_field(
 }
 
 fn track_err_in_variant(
-    res: proc_macro2::TokenStream,
+    res: &proc_macro2::TokenStream,
     v: &VariantInfo,
 ) -> proc_macro2::TokenStream {
     use std::fmt::Write;
@@ -111,8 +111,8 @@ fn track_err_in_variant(
 }
 
 fn catch_expr(
-    res: proc_macro2::TokenStream,
-    err: proc_macro2::TokenStream,
+    res: &proc_macro2::TokenStream,
+    err: &proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     quote!(
         (move || -> Result<_, #err> {
@@ -126,8 +126,8 @@ fn gen_decode(v: &VariantInfo) -> proc_macro2::TokenStream {
         let res = track_err_in_field(quote!(Decode::decode(r)), v, field, index);
         quote!(#res?)
     });
-    res = catch_expr(res, quote!(DecodeError));
-    res = track_err_in_variant(res, v);
+    res = catch_expr(&res, &quote!(DecodeError));
+    res = track_err_in_variant(&res, v);
     res
 }
 
@@ -145,69 +145,101 @@ fn parse_repr(s: &Structure) -> syn::Result<syn::Type> {
         .parse_args()
 }
 
-fn wasmbin_derive(s: Structure) -> proc_macro2::TokenStream {
-    let (encode_discriminant, decode) = match s.ast().data {
-        syn::Data::Enum(_) => {
-            let repr = syn_try!(parse_repr(&s));
+fn gen_enum(s: &Structure) -> syn::Result<(proc_macro2::TokenStream, proc_macro2::TokenStream)> {
+    let repr = parse_repr(s)?;
 
-            let mut encode_discriminant = quote!();
+    let mut encode_discriminant = quote!();
 
-            let mut decoders = quote!();
-            let mut decode_other = quote!({ return Ok(None) });
+    let mut decoders = quote!();
+    let mut decode_other = quote!({ return Ok(None) });
 
-            for v in s.variants() {
-                match v.ast().discriminant {
-                    Some((_, discriminant)) => {
-                        let pat = v.pat();
+    for v in s.variants() {
+        if let Some((_, discriminant)) = v.ast().discriminant {
+            let pat = v.pat();
 
-                        let encode = gen_encode_discriminant(&repr, discriminant);
-                        (quote!(#pat => #encode,)).to_tokens(&mut encode_discriminant);
+            let encode = gen_encode_discriminant(&repr, discriminant);
+            (quote!(#pat => #encode,)).to_tokens(&mut encode_discriminant);
 
-                        let decode = gen_decode(v);
-                        (quote!(
-                            #discriminant => #decode?,
-                        ))
-                        .to_tokens(&mut decoders);
-                    }
-                    None => {
-                        let fields = v.ast().fields;
-                        if fields.len() != 1 {
-                            syn_throw!(syn::Error::new_spanned(
-                                fields,
-                                "Catch-all variants without discriminant must have a single field."
-                            ));
-                        }
-                        let field = fields.iter().next().unwrap();
-                        let construct = match &field.ident {
-                            Some(ident) => quote!({ #ident: res }),
-                            None => quote!((res)),
-                        };
-                        let variant_name = v.ast().ident;
-                        decode_other = quote! {
-                            if let Some(res) = DecodeWithDiscriminant::maybe_decode_with_discriminant(discriminant, r)? {
-                                Self::#variant_name #construct
-                            } else #decode_other
-                        };
-                    }
+            let decode = gen_decode(v);
+            (quote!(
+                #discriminant => #decode?,
+            ))
+            .to_tokens(&mut decoders);
+        } else {
+            let fields = v.ast().fields;
+            if fields.len() != 1 {
+                return Err(syn::Error::new_spanned(
+                    fields,
+                    "Catch-all variants without discriminant must have a single field.",
+                ));
+            }
+            let field = fields.iter().next().unwrap();
+            let construct = if let Some(ident) = &field.ident {
+                quote!({ #ident: res })
+            } else {
+                quote!((res))
+            };
+            let variant_name = v.ast().ident;
+            decode_other = quote! {
+                if let Some(res) = DecodeWithDiscriminant::maybe_decode_with_discriminant(discriminant, r)? {
+                    Self::#variant_name #construct
+                } else #decode_other
+            };
+        }
+    }
+
+    Ok((
+        quote! {
+            match *self {
+                #encode_discriminant
+                _ => {}
+            }
+        },
+        quote! {
+            gen impl DecodeWithDiscriminant for @Self {
+                type Discriminant = #repr;
+
+                fn maybe_decode_with_discriminant(discriminant: #repr, r: &mut impl std::io::Read) -> Result<Option<Self>, DecodeError> {
+                    Ok(Some(match discriminant {
+                        #decoders
+                        _ => #decode_other
+                    }))
                 }
             }
 
-            (
-                quote! {
-                    match *self {
-                        #encode_discriminant
-                        _ => {}
-                    }
-                },
+            gen impl Decode for @Self {
+                fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
+                    DecodeWithDiscriminant::decode_without_discriminant(r)
+                }
+            }
+        },
+    ))
+}
+
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "synstructure::decl_derive! passes an owned Structure to the entry point"
+)]
+fn wasmbin_derive(s: Structure) -> proc_macro2::TokenStream {
+    let (encode_discriminant, decode) = if let syn::Data::Enum(_) = s.ast().data {
+        syn_try!(gen_enum(&s))
+    } else {
+        let variants = s.variants();
+        assert_eq!(variants.len(), 1);
+        let v = &variants[0];
+        let decode = gen_decode(v);
+        match syn_try!(struct_discriminant(v)) {
+            Some(discriminant) => (
+                gen_encode_discriminant(&syn::parse_quote!(u8), &discriminant),
                 quote! {
                     gen impl DecodeWithDiscriminant for @Self {
-                        type Discriminant = #repr;
+                        type Discriminant = u8;
 
-                        fn maybe_decode_with_discriminant(discriminant: #repr, r: &mut impl std::io::Read) -> Result<Option<Self>, DecodeError> {
-                            Ok(Some(match discriminant {
-                                #decoders
-                                _ => #decode_other
-                            }))
+                        fn maybe_decode_with_discriminant(discriminant: u8, r: &mut impl std::io::Read) -> Result<Option<Self>, DecodeError> {
+                            match discriminant {
+                                #discriminant => #decode.map(Some),
+                                _ => Ok(None),
+                            }
                         }
                     }
 
@@ -217,46 +249,17 @@ fn wasmbin_derive(s: Structure) -> proc_macro2::TokenStream {
                         }
                     }
                 },
-            )
-        }
-        _ => {
-            let variants = s.variants();
-            assert_eq!(variants.len(), 1);
-            let v = &variants[0];
-            let decode = gen_decode(v);
-            match syn_try!(struct_discriminant(v)) {
-                Some(discriminant) => (
-                    gen_encode_discriminant(&syn::parse_quote!(u8), &discriminant),
-                    quote! {
-                        gen impl DecodeWithDiscriminant for @Self {
-                            type Discriminant = u8;
-
-                            fn maybe_decode_with_discriminant(discriminant: u8, r: &mut impl std::io::Read) -> Result<Option<Self>, DecodeError> {
-                                match discriminant {
-                                    #discriminant => #decode.map(Some),
-                                    _ => Ok(None),
-                                }
-                            }
+            ),
+            None => (
+                quote! {},
+                quote! {
+                    gen impl Decode for @Self {
+                        fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
+                            #decode
                         }
-
-                        gen impl Decode for @Self {
-                            fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
-                                DecodeWithDiscriminant::decode_without_discriminant(r)
-                            }
-                        }
-                    },
-                ),
-                None => (
-                    quote! {},
-                    quote! {
-                        gen impl Decode for @Self {
-                            fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
-                                #decode
-                            }
-                        }
-                    },
-                ),
-            }
+                    }
+                },
+            ),
         }
     };
 
@@ -281,6 +284,10 @@ fn wasmbin_derive(s: Structure) -> proc_macro2::TokenStream {
     })
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "synstructure::decl_derive! passes an owned Structure to the entry point"
+)]
 fn wasmbin_countable_derive(s: Structure) -> proc_macro2::TokenStream {
     s.gen_impl(quote! {
         gen impl crate::builtins::WasmbinCountable for @Self {}
@@ -288,11 +295,9 @@ fn wasmbin_countable_derive(s: Structure) -> proc_macro2::TokenStream {
 }
 
 fn wasmbin_visit_derive(mut s: Structure) -> proc_macro2::TokenStream {
-    s.bind_with(|_| synstructure::BindStyle::Move);
-
     fn generate_visit_body(
         s: &Structure,
-        method: proc_macro2::TokenStream,
+        method: &proc_macro2::TokenStream,
     ) -> proc_macro2::TokenStream {
         let body = s.each_variant(|v| {
             let res = v.bindings().iter().enumerate().map(|(i, bi)| {
@@ -300,8 +305,8 @@ fn wasmbin_visit_derive(mut s: Structure) -> proc_macro2::TokenStream {
                 track_err_in_field(res, v, bi.ast(), i)
             });
             let mut res = quote!(#(#res?;)*);
-            res = catch_expr(res, quote!(VisitError<VisitE>));
-            res = track_err_in_variant(res, v);
+            res = catch_expr(&res, &quote!(VisitError<VisitE>));
+            res = track_err_in_variant(&res, v);
             quote!(#res?)
         });
         quote!(
@@ -310,9 +315,11 @@ fn wasmbin_visit_derive(mut s: Structure) -> proc_macro2::TokenStream {
         )
     }
 
-    let visit_children_body = generate_visit_body(&s, quote!(visit_child));
+    s.bind_with(|_| synstructure::BindStyle::Move);
 
-    let visit_children_mut_body = generate_visit_body(&s, quote!(visit_child_mut));
+    let visit_children_body = generate_visit_body(&s, &quote!(visit_child));
+
+    let visit_children_mut_body = generate_visit_body(&s, &quote!(visit_child_mut));
 
     s.gen_impl(quote! {
         use crate::visit::{Visit, VisitError};

@@ -68,9 +68,9 @@ macro_rules! def_integer {
 
         impl Decode for $ty {
             fn decode(r: &mut impl std::io::Read) -> Result<Self, DecodeError> {
-                const LIMIT: u64 = (std::mem::size_of::<$ty>() * 8 / 7) as u64 + 1;
+                const LIMIT: u32 = $ty::BITS.div_ceil(7);
 
-                let mut r = std::io::Read::take(r, LIMIT);
+                let mut r = std::io::Read::take(r, u64::from(LIMIT));
                 let as_64 = leb128::read::$leb128_method(&mut r)?;
                 let res = Self::try_from(as_64)?;
 

@@ -35,10 +35,9 @@ pub enum VisitError<E> {
 
 impl<E> VisitError<E> {
     pub(crate) fn in_path(self, item: PathItem) -> Self {
-        #[expect(clippy::match_wildcard_for_single_variants)]
         match self {
             VisitError::LazyDecode(err) => VisitError::LazyDecode(err.in_path(item)),
-            err => err,
+            err @ VisitError::Custom(_) => err,
         }
     }
 }
@@ -58,6 +57,10 @@ pub trait VisitResult {
     type Error;
 
     /// Convert this result into a standard [`Result`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the visitor's error, or `()` if a boolean visitor returned `false`.
     fn into_result(self) -> Result<(), Self::Error>;
 }
 
@@ -73,10 +76,7 @@ impl VisitResult for bool {
     type Error = ();
 
     fn into_result(self) -> Result<(), Self::Error> {
-        match self {
-            true => Ok(()),
-            false => Err(()),
-        }
+        if self { Ok(()) } else { Err(()) }
     }
 }
 
@@ -93,6 +93,10 @@ impl<E> VisitResult for Result<(), E> {
 /// This is particularly useful for finding and updating [indices](crate::indices).
 pub trait Visit: 'static + Sized {
     /// Traverse this value with the provided callback.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if decoding a lazy value fails or the callback reports a failure.
     fn visit<'a, T: 'static, R: VisitResult, F: FnMut(&'a T) -> R>(
         &'a self,
         mut f: F,
@@ -101,6 +105,10 @@ pub trait Visit: 'static + Sized {
     }
 
     /// Traverse this value mutably with the provided callback.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if decoding a lazy value fails or the callback reports a failure.
     fn visit_mut<T: 'static, R: VisitResult, F: FnMut(&mut T) -> R>(
         &mut self,
         mut f: F,
@@ -139,6 +147,10 @@ pub trait Visit: 'static + Sized {
     }
 
     /// Traverse the children of this value with the provided callback.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if decoding a lazy child fails or the callback reports a failure.
     fn visit_children<'a, T: 'static, E, F: FnMut(&'a T) -> Result<(), E>>(
         &'a self,
         _f: &mut F,
@@ -147,6 +159,10 @@ pub trait Visit: 'static + Sized {
     }
 
     /// Traverse the children of this value mutably with the provided callback.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if decoding a lazy child fails or the callback reports a failure.
     fn visit_children_mut<T: 'static, E, F: FnMut(&mut T) -> Result<(), E>>(
         &mut self,
         _f: &mut F,

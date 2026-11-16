@@ -16,8 +16,8 @@ use crate::io::{DecodeError, encode_decode_as};
 use crate::visit::Visit;
 
 encode_decode_as!(bool, {
-    false <=> 0_u8,
-    true <=> 1_u8,
+    (false) <=> (0_u8),
+    (true) <=> (1_u8),
 }, |discriminant| {
     Err(DecodeError::unsupported_discriminant::<Self>(discriminant))
 });

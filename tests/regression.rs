@@ -34,7 +34,7 @@ fn roundtrip_legacy_modules(modules: &[&str]) -> Result<()> {
 fn legacy_throw_ref() -> Result<()> {
     roundtrip_legacy_modules(&[
         // test.0.wasm
-        r#"(module
+        r"(module
           (type (func))
           (func (type 0)
             try
@@ -46,7 +46,7 @@ fn legacy_throw_ref() -> Result<()> {
             try
             delegate 0
           )
-        )"#,
+        )",
     ])
 }
 
@@ -117,23 +117,23 @@ fn legacy_throw() -> Result<()> {
           )
         )"#,
         // test.1.wasm
-        r#"(module
+        r"(module
           (type (func))
           (func (type 0)
             throw 0
           )
-        )"#,
+        )",
         // test.2.wasm
-        r#"(module
+        r"(module
           (type (func (param i32)))
           (type (func))
           (tag (type 0) (param i32))
           (func (type 1)
             throw 0
           )
-        )"#,
+        )",
         // test.3.wasm
-        r#"(module
+        r"(module
           (type (func (param i32)))
           (type (func))
           (tag (type 0) (param i32))
@@ -141,15 +141,13 @@ fn legacy_throw() -> Result<()> {
             i64.const 5
             throw 0
           )
-        )"#,
+        )",
     ])
 }
 
-#[test]
-fn legacy_rethrow() -> Result<()> {
-    roundtrip_legacy_modules(&[
-        // test.0.wasm
-        r#"(module
+const LEGACY_RETHROW_MODULES: &[&str] = &[
+    // test.0.wasm
+    r#"(module
           (type (func))
           (type (func (param i32) (result i32)))
           (tag (type 0))
@@ -247,39 +245,41 @@ fn legacy_rethrow() -> Result<()> {
             end
           )
         )"#,
-        // test.1.wasm
-        r#"(module
+    // test.1.wasm
+    r"(module
           (type (func))
           (func (type 0)
             rethrow 0
           )
-        )"#,
-        // test.2.wasm
-        r#"(module
+        )",
+    // test.2.wasm
+    r"(module
           (type (func))
           (func (type 0)
             block
               rethrow 0
             end
           )
-        )"#,
-        // test.3.wasm
-        r#"(module
+        )",
+    // test.3.wasm
+    r"(module
           (type (func))
           (func (type 0)
             try
               rethrow 0
             delegate 0
           )
-        )"#,
-    ])
-}
+        )",
+];
 
 #[test]
-fn legacy_try_catch() -> Result<()> {
-    roundtrip_legacy_modules(&[
-        // test.0.wasm
-        r#"(module
+fn legacy_rethrow() -> Result<()> {
+    roundtrip_legacy_modules(LEGACY_RETHROW_MODULES)
+}
+
+const LEGACY_TRY_CATCH_MODULES: &[&str] = &[
+    // test.0.wasm
+    r#"(module
           (type (func))
           (tag (type 0))
           (export "e0" (tag 0))
@@ -288,8 +288,8 @@ fn legacy_try_catch() -> Result<()> {
             throw 0
           )
         )"#,
-        // test.1.wasm
-        r#"(module
+    // test.1.wasm
+    r#"(module
           (type (func))
           (type (func (param i32)))
           (type (func (param f32)))
@@ -518,8 +518,8 @@ fn legacy_try_catch() -> Result<()> {
             end
           )
         )"#,
-        // test.2.wasm
-        r#"(module
+    // test.2.wasm
+    r#"(module
           (type (func))
           (type (func (result i32)))
           (import "test" "throw" (func (type 0)))
@@ -538,25 +538,25 @@ fn legacy_try_catch() -> Result<()> {
             end
           )
         )"#,
-        // test.6.wasm
-        r#"(module
+    // test.6.wasm
+    r"(module
           (type (func (result i32)))
           (func (type 0) (result i32)
             try (result i32)
             end
           )
-        )"#,
-        // test.7.wasm
-        r#"(module
+        )",
+    // test.7.wasm
+    r"(module
           (type (func (result i32)))
           (func (type 0) (result i32)
             try (result i32)
               i64.const 42
             end
           )
-        )"#,
-        // test.8.wasm
-        r#"(module
+        )",
+    // test.8.wasm
+    r"(module
           (type (func))
           (tag (type 0))
           (func (type 0)
@@ -565,9 +565,9 @@ fn legacy_try_catch() -> Result<()> {
               i32.const 42
             end
           )
-        )"#,
-        // test.9.wasm
-        r#"(module
+        )",
+    // test.9.wasm
+    r"(module
           (type (func (param i64)))
           (type (func (result i32)))
           (tag (type 0) (param i64))
@@ -577,9 +577,9 @@ fn legacy_try_catch() -> Result<()> {
             catch 0
             end
           )
-        )"#,
-        // test.10.wasm
-        r#"(module
+        )",
+    // test.10.wasm
+    r"(module
           (type (func))
           (func (type 0)
             try
@@ -587,15 +587,17 @@ fn legacy_try_catch() -> Result<()> {
               i32.const 42
             end
           )
-        )"#,
-    ])
-}
+        )",
+];
 
 #[test]
-fn legacy_try_delegate() -> Result<()> {
-    roundtrip_legacy_modules(&[
-        // test.0.wasm
-        r#"(module
+fn legacy_try_catch() -> Result<()> {
+    roundtrip_legacy_modules(LEGACY_TRY_CATCH_MODULES)
+}
+
+const LEGACY_TRY_DELEGATE_MODULES: &[&str] = &[
+    // test.0.wasm
+    r#"(module
           (type (func))
           (type (func (result i32)))
           (type (func (param i32)))
@@ -821,13 +823,17 @@ fn legacy_try_delegate() -> Result<()> {
             end
           )
         )"#,
-        // test.5.wasm
-        r#"(module
+    // test.5.wasm
+    r"(module
           (type (func))
           (func (type 0)
             try
             delegate 1
           )
-        )"#,
-    ])
+        )",
+];
+
+#[test]
+fn legacy_try_delegate() -> Result<()> {
+    roundtrip_legacy_modules(LEGACY_TRY_DELEGATE_MODULES)
 }
