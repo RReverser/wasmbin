@@ -31,14 +31,50 @@ pub enum Misc {
     I64TruncSatF32U = 0x05,
     I64TruncSatF64S = 0x06,
     I64TruncSatF64U = 0x07,
-    MemoryInit { data: DataId, mem: MemId } = 0x08,
+    MemoryInit {
+        data: DataId,
+        mem: MemId,
+    } = 0x08,
     DataDrop(DataId) = 0x09,
-    MemoryCopy { dest: MemId, src: MemId } = 0x0A,
+    MemoryCopy {
+        dest: MemId,
+        src: MemId,
+    } = 0x0A,
     MemoryFill(MemId) = 0x0B,
-    TableInit { elem: ElemId, table: TableId } = 0x0C,
+    TableInit {
+        elem: ElemId,
+        table: TableId,
+    } = 0x0C,
     ElemDrop(ElemId) = 0x0D,
-    TableCopy { dest: TableId, src: TableId } = 0x0E,
+    TableCopy {
+        dest: TableId,
+        src: TableId,
+    } = 0x0E,
     TableGrow(TableId) = 0x0F,
     TableSize(TableId) = 0x10,
     TableFill(TableId) = 0x11,
+    /// Adds two 128-bit integers, wrapping modulo 2^128.
+    ///
+    /// Stack: `[lhs_lo, lhs_hi, rhs_lo, rhs_hi] -> [result_lo, result_hi]`, all `i64`.
+    /// Requires the `wide-arithmetic` feature.
+    #[cfg(feature = "wide-arithmetic")]
+    I64Add128 = 0x13,
+    /// Subtracts two 128-bit integers, wrapping modulo 2^128.
+    ///
+    /// Stack: `[lhs_lo, lhs_hi, rhs_lo, rhs_hi] -> [result_lo, result_hi]`, all `i64`.
+    /// Requires the `wide-arithmetic` feature.
+    #[cfg(feature = "wide-arithmetic")]
+    I64Sub128 = 0x14,
+    /// Multiplies two signed 64-bit integers to produce a 128-bit result.
+    ///
+    /// Stack: `[lhs, rhs] -> [result_lo, result_hi]`, all `i64`.
+    /// Requires the `wide-arithmetic` feature.
+    #[cfg(feature = "wide-arithmetic")]
+    I64MulWideS = 0x15,
+    /// Multiplies two unsigned 64-bit integers to produce a 128-bit result.
+    ///
+    /// Stack: `[lhs, rhs] -> [result_lo, result_hi]`, all `i64`.
+    /// Requires the `wide-arithmetic` feature.
+    #[cfg(feature = "wide-arithmetic")]
+    I64MulWideU = 0x16,
 }

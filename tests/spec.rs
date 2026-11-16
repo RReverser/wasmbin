@@ -163,6 +163,7 @@ impl Tests {
 
         read_proposal_tests!(? "threads");
         read_proposal_tests!(? "custom-page-sizes");
+        read_proposal_tests!(? "wide-arithmetic");
 
         ensure!(
             !test_files.is_empty(),
