@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0](https://github.com/RReverser/wasmbin/compare/wasmbin-v0.10.0...wasmbin-v0.11.0) - 2026-11-16
+
+### Other
+
+- Enforce Pedantic Clippy Globally ([#20](https://github.com/RReverser/wasmbin/pull/20))
+- Branch Hinting ([#19](https://github.com/RReverser/wasmbin/pull/19))
+- Wide Arithmetic ([#18](https://github.com/RReverser/wasmbin/pull/18))
+- Update WASM testsuite ([#16](https://github.com/RReverser/wasmbin/pull/16))
+
 ## [0.10.0](https://github.com/RReverser/wasmbin/compare/wasmbin-v0.9.2...wasmbin-v0.10.0) - 2026-10-24
 
 ### Other
